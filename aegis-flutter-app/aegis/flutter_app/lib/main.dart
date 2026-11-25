@@ -34,6 +34,7 @@ class AegisApp extends StatelessWidget {
         theme: buildTheme(Brightness.light),
         darkTheme: buildTheme(Brightness.dark),
         themeMode: context.select<AppState, ThemeMode>((s) => s.themeMode),
+        builder: (context, child) => AuroraBackground(child: child ?? const SizedBox.shrink()),
         home: const Root(),
       );
 }
@@ -134,9 +135,9 @@ class _Shell extends StatelessWidget {
           if (s.banner != null)
             Positioned(
               top: MediaQuery.of(context).padding.top + 8, left: 16, right: 16,
-              child: Material(
-                color: p.card, elevation: 6, borderRadius: BorderRadius.circular(16),
-                child: Padding(padding: const EdgeInsets.all(14), child: Text(s.banner!, style: TextStyle(color: p.label, fontWeight: FontWeight.w600))),
+              child: Glass(
+                radius: 18, strong: true, padding: const EdgeInsets.all(14),
+                child: Text(s.banner!, style: TextStyle(color: p.label, fontWeight: FontWeight.w600)),
               ),
             ),
         ]),

@@ -135,7 +135,7 @@ class HomeScreen extends StatelessWidget {
               onPressed: () => launchUrl(Uri.parse('tel:${e.value}')),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
               side: BorderSide.none,
-              backgroundColor: p.card,
+              backgroundColor: p.glass,
             ),
         ]),
         const SizedBox(height: 12),

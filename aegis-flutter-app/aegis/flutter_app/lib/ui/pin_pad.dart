@@ -38,7 +38,7 @@ class _PinDialogState extends State<_PinDialog> {
   Widget build(BuildContext context) {
     final p = Pal.of(context);
     return AlertDialog(
-      backgroundColor: p.card,
+      backgroundColor: p.dark ? const Color(0xE61C1C2E) : const Color(0xE6FFFFFF),
       title: Text(widget.title, textAlign: TextAlign.center),
       content: SizedBox(
         width: 280,

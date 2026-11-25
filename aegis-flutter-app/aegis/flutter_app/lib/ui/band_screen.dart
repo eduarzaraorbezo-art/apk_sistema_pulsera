@@ -83,7 +83,7 @@ class BandScreen extends StatelessWidget {
     final p = Pal.of(context);
     final bat = s.latest?.battery;
     return Scaffold(
-      appBar: AppBar(title: const Text('Mi pulsera'), backgroundColor: p.bg, surfaceTintColor: Colors.transparent),
+      appBar: AppBar(title: const Text('Mi pulsera')),
       body: ListView(padding: const EdgeInsets.fromLTRB(16, 8, 16, 40), children: [
         Card2(
           child: Row(children: [

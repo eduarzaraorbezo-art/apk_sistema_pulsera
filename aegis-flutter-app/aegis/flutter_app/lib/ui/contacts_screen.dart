@@ -51,7 +51,7 @@ class ContactsScreen extends StatelessWidget {
                 background: Container(color: AC.red, alignment: Alignment.centerRight, padding: const EdgeInsets.only(right: 20), child: const Icon(CupertinoIcons.delete, color: Colors.white)),
                 onDismissed: (_) => s.removeContact(s.contacts[i]['id'] as int),
                 child: Container(
-                  color: p.card,
+                  color: Colors.transparent,
                   child: InkWell(
                     onTap: () => _actions(context, '${s.contacts[i]['name']}', '${s.contacts[i]['phone']}'),
                     child: Padding(

@@ -5,6 +5,65 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'theme.dart';
 
+/// Liquid Glass: desenfoque + saturación del fondo (efecto de refracción), tinte adaptable al modo claro/oscuro,
+/// borde con luz y un brillo especular en la parte superior.
+class Glass extends StatelessWidget {
+  const Glass({super.key, required this.child, this.radius = 20, this.borderRadius, this.blur = 22, this.tint, this.strong = false, this.padding});
+  final Widget child;
+  final double radius, blur;
+  final BorderRadius? borderRadius;
+  final Color? tint;
+  final bool strong;
+  final EdgeInsets? padding;
+
+  static ImageFilter _filter(double blur) {
+    const s = 1.7, lr = 0.2126, lg = 0.7152, lb = 0.0722;
+    final m = <double>[
+      lr * (1 - s) + s, lg * (1 - s), lb * (1 - s), 0, 0,
+      lr * (1 - s), lg * (1 - s) + s, lb * (1 - s), 0, 0,
+      lr * (1 - s), lg * (1 - s), lb * (1 - s) + s, 0, 0,
+      0, 0, 0, 1, 0,
+    ];
+    return ImageFilter.compose(outer: ColorFilter.matrix(m), inner: ImageFilter.blur(sigmaX: blur, sigmaY: blur, tileMode: TileMode.mirror));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final p = Pal.of(context);
+    final r = borderRadius ?? BorderRadius.circular(radius);
+    final base = tint ?? (strong ? p.glassStrong : p.glass);
+    return ClipRRect(
+      borderRadius: r,
+      child: BackdropFilter(
+        filter: _filter(blur),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            borderRadius: r,
+            gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [base, base.withOpacity(base.opacity * 0.72)]),
+            border: Border.all(color: p.glassEdge, width: 0.8),
+          ),
+          child: Stack(fit: StackFit.passthrough, children: [
+            padding == null ? child : Padding(padding: padding!, child: child),
+            Positioned.fill(
+              child: IgnorePointer(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    borderRadius: r,
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter, end: Alignment.bottomCenter, stops: const [0, 0.4],
+                      colors: [Colors.white.withOpacity(p.dark ? 0.10 : 0.35), Colors.white.withOpacity(0)],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ]),
+        ),
+      ),
+    );
+  }
+}
+
 /// Contenedor de página: título grande estilo iOS + lista con espacio para la barra inferior.
 class Page2 extends StatelessWidget {
   const Page2({super.key, required this.title, this.subtitle, this.trailing, required this.children});
@@ -52,13 +111,14 @@ class Card2 extends StatelessWidget {
     final p = Pal.of(context);
     return Padding(
       padding: margin,
-      child: Material(
-        color: color ?? p.card,
-        borderRadius: BorderRadius.circular(20),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: onTap == null ? null : () { HapticFeedback.selectionClick(); onTap!(); },
-          child: Padding(padding: padding, child: child),
+      child: Glass(
+        tint: color,
+        child: Material(
+          type: MaterialType.transparency,
+          child: InkWell(
+            onTap: onTap == null ? null : () { HapticFeedback.selectionClick(); onTap!(); },
+            child: Padding(padding: padding, child: child),
+          ),
         ),
       ),
     );
@@ -105,11 +165,9 @@ class Group extends StatelessWidget {
       items.add(children[i]);
       if (i < children.length - 1) items.add(Divider(height: 1, thickness: 0.5, indent: 58, color: p.separator));
     }
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(color: p.card, borderRadius: BorderRadius.circular(16)),
-      clipBehavior: Clip.antiAlias,
-      child: Column(children: items),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Glass(radius: 18, child: Material(type: MaterialType.transparency, child: Column(children: items))),
     );
   }
 }
@@ -158,9 +216,8 @@ class StatTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = Pal.of(context);
-    return Container(
+    return Glass(
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(color: p.card, borderRadius: BorderRadius.circular(20)),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [Icon(icon, size: 16, color: color), const SizedBox(width: 6), Flexible(child: Text(label, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: color)))]),
         const SizedBox(height: 10),
@@ -222,10 +279,9 @@ class QuickAction extends StatelessWidget {
       child: GestureDetector(
         onTap: () { HapticFeedback.lightImpact(); onTap(); },
         child: Column(children: [
-          Container(
+          SizedBox(
             width: 58, height: 58,
-            decoration: BoxDecoration(color: color.withOpacity(0.15), shape: BoxShape.circle),
-            child: Icon(icon, color: color, size: 26),
+            child: Glass(radius: 29, blur: 16, tint: color.withOpacity(0.30), child: Center(child: Icon(icon, color: Colors.white, size: 26))),
           ),
           const SizedBox(height: 6),
           Text(label, textAlign: TextAlign.center, maxLines: 2, style: TextStyle(fontSize: 12, color: p.label)),
@@ -235,7 +291,7 @@ class QuickAction extends StatelessWidget {
   }
 }
 
-/// Barra inferior translúcida (efecto cristal).
+/// Barra inferior flotante de cristal; la pestaña activa se marca con una cápsula de vidrio.
 class GlassNavBar extends StatelessWidget {
   const GlassNavBar({super.key, required this.index, required this.onTap, required this.items});
   final int index;
@@ -244,27 +300,35 @@ class GlassNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = Pal.of(context);
-    return ClipRect(
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-        child: Container(
-          decoration: BoxDecoration(color: p.card.withOpacity(0.78), border: Border(top: BorderSide(color: p.separator, width: 0.5))),
-          padding: EdgeInsets.only(top: 8, bottom: MediaQuery.of(context).padding.bottom + 6),
-          child: Row(children: [
-            for (var i = 0; i < items.length; i++)
-              Expanded(
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () { if (i != index) HapticFeedback.selectionClick(); onTap(i); },
+    return Padding(
+      padding: EdgeInsets.fromLTRB(14, 0, 14, MediaQuery.of(context).padding.bottom + 10),
+      child: Glass(
+        radius: 32, blur: 30, strong: true,
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+        child: Row(children: [
+          for (var i = 0; i < items.length; i++)
+            Expanded(
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () { if (i != index) HapticFeedback.selectionClick(); onTap(i); },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 220),
+                  curve: Curves.easeOut,
+                  padding: const EdgeInsets.symmetric(vertical: 7),
+                  decoration: BoxDecoration(
+                    color: i == index ? AC.blue.withOpacity(p.dark ? 0.30 : 0.16) : Colors.transparent,
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: i == index ? p.glassEdge : Colors.transparent, width: 0.8),
+                  ),
                   child: Column(mainAxisSize: MainAxisSize.min, children: [
-                    Icon(items[i].$1, size: 25, color: i == index ? AC.blue : AC.gray),
+                    Icon(items[i].$1, size: 24, color: i == index ? AC.blue : p.secondary),
                     const SizedBox(height: 2),
-                    Text(items[i].$2, style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: i == index ? AC.blue : AC.gray)),
+                    Text(items[i].$2, style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: i == index ? AC.blue : p.secondary)),
                   ]),
                 ),
               ),
-          ]),
-        ),
+            ),
+        ]),
       ),
     );
   }
@@ -272,30 +336,45 @@ class GlassNavBar extends StatelessWidget {
 
 /// Hoja inferior redondeada con asa.
 Future<T?> showSheet<T>(BuildContext context, Widget Function(BuildContext) builder) {
-  final p = Pal.of(context);
   return showModalBottomSheet<T>(
     context: context,
     isScrollControlled: true,
-    backgroundColor: p.bg,
-    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-    builder: (c) => Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(c).viewInsets.bottom),
-      child: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
-          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            Center(child: Container(width: 38, height: 5, decoration: BoxDecoration(color: p.separator, borderRadius: BorderRadius.circular(3)))),
-            const SizedBox(height: 14),
-            builder(c),
-          ]),
+    backgroundColor: Colors.transparent,
+    barrierColor: Colors.black38,
+    elevation: 0,
+    builder: (c) {
+      final p = Pal.of(c);
+      return Padding(
+        padding: EdgeInsets.fromLTRB(8, 0, 8, MediaQuery.of(c).viewInsets.bottom + 8),
+        child: Glass(
+          borderRadius: const BorderRadius.all(Radius.circular(32)), blur: 34, strong: true,
+          child: SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+              child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                Center(child: Container(width: 38, height: 5, decoration: BoxDecoration(color: p.secondary.withOpacity(0.5), borderRadius: BorderRadius.circular(3)))),
+                const SizedBox(height: 14),
+                builder(c),
+              ]),
+            ),
+          ),
         ),
-      ),
-    ),
+      );
+    },
   );
 }
 
-void toast(BuildContext c, String msg) =>
-    ScaffoldMessenger.of(c).showSnackBar(SnackBar(content: Text(msg), behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))));
+void toast(BuildContext c, String msg) {
+  final p = Pal.of(c);
+  ScaffoldMessenger.of(c).showSnackBar(SnackBar(
+    backgroundColor: Colors.transparent,
+    elevation: 0,
+    padding: EdgeInsets.zero,
+    behavior: SnackBarBehavior.floating,
+    margin: const EdgeInsets.fromLTRB(16, 0, 16, 96),
+    content: Glass(radius: 18, strong: true, padding: const EdgeInsets.all(14), child: Text(msg, style: TextStyle(color: p.label, fontWeight: FontWeight.w600))),
+  ));
+}
 
 String fmtDate(int ms) {
   final d = DateTime.fromMillisecondsSinceEpoch(ms);

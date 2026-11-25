@@ -91,7 +91,7 @@ class _SafetyScreenState extends State<SafetyScreen> {
                       background: Container(color: AC.red, alignment: Alignment.centerRight, padding: const EdgeInsets.only(right: 20), child: const Icon(CupertinoIcons.delete, color: Colors.white)),
                       onDismissed: (_) => s.removePlace(pl.id),
                       child: Container(
-                        color: p.card,
+                        color: Colors.transparent,
                         child: Row2(
                           icon: CupertinoIcons.house_fill, color: inside ? AC.green : AC.blue, title: pl.name,
                           subtitle: d == null ? 'Radio ${pl.radius} m' : (inside ? 'Estás en un lugar seguro' : 'A ${d >= 1000 ? '${(d / 1000).toStringAsFixed(1)} km' : '${d.round()} m'}'),

@@ -90,8 +90,6 @@ class _MessagesScreenState extends State<MessagesScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Mensajes rápidos'),
-        backgroundColor: p.bg,
-        surfaceTintColor: Colors.transparent,
         actions: [IconButton(onPressed: () => _edit(s), icon: const Icon(CupertinoIcons.add))],
       ),
       body: ListView(padding: const EdgeInsets.fromLTRB(16, 8, 16, 40), children: [

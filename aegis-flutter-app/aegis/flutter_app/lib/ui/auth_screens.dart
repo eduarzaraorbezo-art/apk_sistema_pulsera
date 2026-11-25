@@ -31,9 +31,8 @@ class _Panel extends StatelessWidget {
   const _Panel({required this.children});
   final List<Widget> children;
   @override
-  Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(color: Pal.of(context).card, borderRadius: BorderRadius.circular(24)),
+  Widget build(BuildContext context) => Glass(
+        radius: 26, strong: true, blur: 30, padding: const EdgeInsets.all(20),
         child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: children),
       );
 }
