@@ -103,7 +103,7 @@ class _Shell extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = context.watch<AppState>();
     final pages = s.isAdmin ? _admin : _user;
-    final tab = s.tab.clamp(0, pages.length - 1);
+    final tab = s.tab.clamp(0, pages.length - 1).toInt();
     final p = Pal.of(context);
     return Stack(children: [
       Scaffold(

@@ -13,7 +13,7 @@ double distToSegmentM(double lat, double lon, List<double> a, List<double> b) {
   final dx = bx - ax, dy = by - ay;
   final len2 = dx * dx + dy * dy;
   final t = len2 == 0 ? 0.0 : ((-ax) * dx + (-ay) * dy) / len2;
-  final c = t.clamp(0.0, 1.0);
+  final c = t.clamp(0.0, 1.0).toDouble();
   final px = ax + c * dx, py = ay + c * dy;
   return sqrt(px * px + py * py);
 }

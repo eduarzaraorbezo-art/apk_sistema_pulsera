@@ -4,7 +4,7 @@ import '../sync/sync_service.dart';
 import 'theme.dart';
 import 'widgets.dart';
 
-const _alertNames = {1: 'Caída detectada', 2: 'Batería baja', 3: 'Pulsera fuera de la muñeca', 4: 'Manipulación', 5: 'Defensa armada', 6: 'Defensa activada', 7: 'Defensa desarmada'};
+const _alertNames = {1: 'Caída detectada', 2: 'Batería baja', 3: 'Pulsera fuera de la muñeca', 4: 'Manipulación', 5: 'Defensa armada', 6: 'Defensa activada', 7: 'Defensa desarmada', 8: 'Grabación iniciada', 9: 'Grabación detenida', 10: 'Instantánea'};
 
 /// Historial de gestos y alertas de la pulsera, tal como los guardó el servidor.
 class ActivityScreen extends StatefulWidget {
@@ -32,7 +32,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
   (IconData, Color, String) _describe(Map<String, dynamic> e) {
     switch (e['kind']) {
       case 'gesture':
-        return (CupertinoIcons.hand_point_right_fill, AC.blue, 'Gesto → ${e['action'] ?? ''}');
+        return (CupertinoIcons.hand_raised_fill, AC.blue, 'Gesto → ${e['action'] ?? ''}');
       case 'band_alert':
         final c = e['code'] is int ? e['code'] as int : 0;
         return (CupertinoIcons.exclamationmark_triangle_fill, c == 1 || c == 6 ? AC.red : AC.orange, _alertNames[c] ?? 'Alerta de la pulsera');

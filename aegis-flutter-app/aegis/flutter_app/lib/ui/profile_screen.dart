@@ -159,7 +159,7 @@ class ProfileScreen extends StatelessWidget {
         ],
         const SectionLabel('Acerca de'),
         Group(children: [
-          const Row2(icon: CupertinoIcons.shield_fill, color: AC.gray, title: 'AEGIS Smart Safety Band', value: 'v0.3'),
+          const Row2(icon: CupertinoIcons.shield_fill, color: AC.gray, title: 'AEGIS Smart Safety Band', value: 'v0.4'),
           Row2(icon: CupertinoIcons.link, color: AC.gray, title: 'Servidor', value: apiBase.replaceFirst('https://', '')),
         ]),
         const SizedBox(height: 4),

@@ -22,8 +22,8 @@ android {
 
     defaultConfig {
         applicationId = "com.example.aegis_app"
-        minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
+        minSdk = 29
+        targetSdk = 34
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }

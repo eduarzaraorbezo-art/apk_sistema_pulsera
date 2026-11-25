@@ -42,10 +42,6 @@ class Proto {
   static const tFindBand = 31; // app -> pulsera, payload: [segundos]
   static const tSprayEvent = 40; // pulsera -> app, payload: [estado] 0 armado, 1 disparado, 2 desarmado, 3 fallo
 
-  // Gestos (la pulsera solo informa; qué hace cada uno lo decide la app)
-  static const gSosHold = 1, gSosDouble = 2, gSosTriple = 3, gAuxShort = 4, gAuxDouble = 5, gAuxHold = 6;
-  static const gestureKeys = {gSosDouble: 'sos_double', gSosTriple: 'sos_triple', gAuxShort: 'aux_short', gAuxDouble: 'aux_double', gAuxHold: 'aux_hold'};
-
   // Patrones de feedback: vibración + LED
   static const fbOk = 1, fbError = 2, fbSent = 3, fbArmed = 4;
   static const healthPayloadLen = 9; // hr u8, spo2 u8, temp u16 LE (0.01 °C), steps u32 LE, battery u8
@@ -97,24 +93,24 @@ class Proto {
   }
 
   static Uint8List feedback(int seq, int pattern) => encode(Frame(tFeedback, 0, seq, Uint8List.fromList([pattern])));
-  static Uint8List findBand(int seq, int seconds) => encode(Frame(tFindBand, 0, seq, Uint8List.fromList([seconds.clamp(1, 30)])));
+  static Uint8List findBand(int seq, int seconds) => encode(Frame(tFindBand, 0, seq, Uint8List.fromList([seconds.clamp(1, 30).toInt()])));
 
   static Uint8List ack(int seq) => encode(Frame(tAck, 0, seq, Uint8List(0)));
 
   /// Construye el payload de salud (lo usa el simulador y los tests; el firmware hace lo mismo en C).
   static Uint8List healthPayload(HealthSample s) {
     final p = Uint8List(healthPayloadLen);
-    final t = ((s.tempC ?? 0) * 100).round().clamp(0, 0xFFFF);
-    final st = (s.steps ?? 0).clamp(0, 0xFFFFFFFF);
-    p[0] = (s.hr ?? 0).clamp(0, 255);
-    p[1] = (s.spo2 ?? 0).clamp(0, 100);
+    final t = ((s.tempC ?? 0) * 100).round().clamp(0, 0xFFFF).toInt();
+    final st = (s.steps ?? 0).clamp(0, 0xFFFFFFFF).toInt();
+    p[0] = (s.hr ?? 0).clamp(0, 255).toInt();
+    p[1] = (s.spo2 ?? 0).clamp(0, 100).toInt();
     p[2] = t & 0xFF;
     p[3] = (t >> 8) & 0xFF;
     p[4] = st & 0xFF;
     p[5] = (st >> 8) & 0xFF;
     p[6] = (st >> 16) & 0xFF;
     p[7] = (st >> 24) & 0xFF;
-    p[8] = (s.battery ?? 0xFF).clamp(0, 255);
+    p[8] = (s.battery ?? 0xFF).clamp(0, 255).toInt();
     return p;
   }
 
@@ -135,7 +131,7 @@ class Proto {
   }
 
   static Uint8List config({required int sosHoldSeconds, bool fall = false, bool spray = false, bool haptic = true, int armSeconds = 5}) =>
-      Uint8List.fromList([sosHoldSeconds.clamp(2, 5), (fall ? cfgFall : 0) | (spray ? cfgSpray : 0) | (haptic ? cfgHaptic : 0), armSeconds.clamp(2, 10)]);
+      Uint8List.fromList([sosHoldSeconds.clamp(2, 5).toInt(), (fall ? cfgFall : 0) | (spray ? cfgSpray : 0) | (haptic ? cfgHaptic : 0), armSeconds.clamp(2, 10).toInt()]);
 
   static Uint8List command(int cmd, [int arg = 0]) => Uint8List.fromList([cmd, arg & 0xFF]);
 

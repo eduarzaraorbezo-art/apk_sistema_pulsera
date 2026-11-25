@@ -127,7 +127,7 @@ class PulsingHeart extends StatefulWidget {
 
 class _PulsingHeartState extends State<PulsingHeart> with SingleTickerProviderStateMixin {
   late final AnimationController _c = AnimationController(vsync: this, duration: _dur(widget.bpm))..repeat(reverse: true);
-  Duration _dur(int? b) => Duration(milliseconds: (30000 / (b == null || b < 30 ? 70 : b)).round().clamp(120, 1000));
+  Duration _dur(int? b) => Duration(milliseconds: (30000 / (b == null || b < 30 ? 70 : b)).round().clamp(120, 1000).toInt());
 
   @override
   void didUpdateWidget(covariant PulsingHeart old) {
@@ -241,7 +241,7 @@ class CountdownRing extends StatelessWidget {
   @override
   Widget build(BuildContext context) => SizedBox(
         width: size, height: size,
-        child: CustomPaint(painter: _CountPainter(progress.clamp(0, 1), color, Pal.of(context).fill), child: Center(child: child)),
+        child: CustomPaint(painter: _CountPainter(progress.clamp(0.0, 1.0).toDouble(), color, Pal.of(context).fill), child: Center(child: child)),
       );
 }
 

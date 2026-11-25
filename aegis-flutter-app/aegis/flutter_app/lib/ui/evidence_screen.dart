@@ -34,7 +34,9 @@ class _EvidenceScreenState extends State<EvidenceScreen> {
   void initState() {
     super.initState();
     _load();
-    _player.onPlayerComplete.listen((_) => mounted ? setState(() => _playing = null) : null);
+    _player.onPlayerComplete.listen((_) {
+      if (mounted) setState(() => _playing = null);
+    });
   }
 
   @override

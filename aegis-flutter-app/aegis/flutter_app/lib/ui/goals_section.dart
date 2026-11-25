@@ -27,7 +27,7 @@ class GoalsSection extends StatelessWidget {
           future: s.todaySteps(),
           builder: (c, snap) {
             final steps = snap.data ?? 0;
-            final pr = (steps / s.stepGoal).clamp(0.0, 1.0);
+            final pr = (steps / s.stepGoal).clamp(0.0, 1.0).toDouble();
             return Row(children: [
               CountdownRing(
                 progress: pr, color: pr >= 1 ? AC.green : AC.orange, size: 110,

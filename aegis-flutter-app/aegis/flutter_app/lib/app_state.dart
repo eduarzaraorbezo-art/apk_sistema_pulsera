@@ -92,7 +92,7 @@ class AppState extends ChangeNotifier {
   final _detector = AnomalyDetector();
   final trk = TrackState();
   final rec = EvidenceRecorder();
-  late final live = LiveShare(trk);
+  late final liveShare = LiveShare(trk);
   late final route = SafeRoute(trk);
   List<Map<String, Object?>> sleep = [];
   String _promptSource = 'fall';
@@ -149,7 +149,7 @@ class AppState extends ChangeNotifier {
   int get hrMax => (profile['hr_max'] as int?) ?? 150;
   HrLevel get hrState => hrLevel(latest?.hr, hrMin, hrMax);
   int get checkinRemainingSec =>
-      checkin == null ? 0 : ((checkin!.dueMs - DateTime.now().millisecondsSinceEpoch) / 1000).ceil().clamp(0, 1 << 30);
+      checkin == null ? 0 : ((checkin!.dueMs - DateTime.now().millisecondsSinceEpoch) / 1000).ceil().clamp(0, 1 << 30).toInt();
   String get syncLabel => pending > 0 ? (net == NetState.online ? 'SYNCING' : 'PENDING') : net.name.toUpperCase();
   String get displayName {
     final n = (profile['full_name'] as String?)?.trim();
@@ -183,7 +183,7 @@ class AppState extends ChangeNotifier {
     final id = await sos.handle('silent', silent: true);
     if (id == null) return;
     refresh();
-    final url = live.active ? live.url : await live.start(minutes: 240);
+    final url = liveShare.active ? liveShare.url : await liveShare.start(minutes: 240);
     if (url != null && loggedIn && contacts.isNotEmpty) {
       final pos = await _position();
       await _pushContacts();
@@ -225,7 +225,7 @@ class AppState extends ChangeNotifier {
       flash('Llegaste a ${route.destName}');
     };
     final p = _p = await SharedPreferences.getInstance();
-    themeMode = ThemeMode.values[(p.getInt('theme') ?? 0).clamp(0, 2)];
+    themeMode = ThemeMode.values[(p.getInt('theme') ?? 0).clamp(0, 2).toInt()];
     demo = p.getBool('demo') ?? false;
     loginName = p.getString('email') ?? '';
     role = p.getString('role') ?? '';
@@ -329,7 +329,7 @@ class AppState extends ChangeNotifier {
     await trk.recoverInterrupted();
     await community.loadCache();
     community.startAlertPolling(trk.position, () => settings['helper_mode'] != false);
-    live.restore();
+    liveShare.restore();
     await loadSleep();
     _poll = Timer.periodic(const Duration(seconds: 3), (_) => refresh());
     _tick = Timer.periodic(const Duration(seconds: 1), (_) => _onTick());
@@ -387,7 +387,7 @@ class AppState extends ChangeNotifier {
     _simTimer?.cancel();
     _flush?.cancel();
     stopTakeover();
-    await live.stop();
+    await liveShare.stop();
     route.reset();
     await trk.stop();
     await rec.stop();
@@ -403,7 +403,7 @@ class AppState extends ChangeNotifier {
 
   Future<void> _wipeLocal() async {
     await AegisDb.wipe();
-    await live.reset();
+    await liveShare.reset();
     route.reset();
     await PinStore.clear();
     sleep = [];
@@ -516,11 +516,11 @@ class AppState extends ChangeNotifier {
       case 'silent_sos':
         await silentSos();
       case 'live_share':
-        if (live.active) {
-          await live.stop();
+        if (liveShare.active) {
+          await liveShare.stop();
           flash('Dejaste de compartir tu ubicación');
         } else {
-          final u = await live.start();
+          final u = await liveShare.start();
           flash(u == null ? 'No se pudo compartir la ubicación' : 'Compartiendo tu ubicación en vivo');
         }
       case 'record':
@@ -623,7 +623,7 @@ class AppState extends ChangeNotifier {
     final step = rs.length / maxPts;
     final out = <Reading>[];
     for (var i = 0; i < maxPts; i++) {
-      final chunk = rs.sublist((i * step).floor(), ((i + 1) * step).floor().clamp(1, rs.length));
+      final chunk = rs.sublist((i * step).floor(), ((i + 1) * step).floor().clamp(1, rs.length).toInt());
       if (chunk.isEmpty) continue;
       final hrs = [for (final r in chunk) if (r.hr != null) r.hr!];
       out.add(Reading(
@@ -877,7 +877,7 @@ class AppState extends ChangeNotifier {
 
   /// Manda el enlace de ubicación en vivo a los contactos (servidor o app de SMS). Devuelve un texto para mostrar.
   Future<String> sendLiveLink() async {
-    final u = live.url;
+    final u = liveShare.url;
     if (u == null) return 'No hay un enlace activo';
     return _outcomeText(await _send(text: 'Sigue mi ubicación en vivo: $u'));
   }
@@ -1052,7 +1052,7 @@ class AppState extends ChangeNotifier {
     _takeTimer?.cancel();
     _fakeTimer?.cancel();
     _bannerTimer?.cancel();
-    live.dispose();
+    liveShare.dispose();
     route.dispose();
     trk.dispose();
     rec.dispose();

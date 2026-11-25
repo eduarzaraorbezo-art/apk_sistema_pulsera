@@ -220,54 +220,6 @@ class Api {
   }
 
   static Future<void> deletePlace(String rid) => authed('DELETE', '/places/$rid');
-}
-
-/// Envía la cola local al backend. Idempotente por op_id; emergencias primero.
-/// Devuelve true si todo lo pendiente quedó confirmado.
-Future<bool> syncPending() async {
-  final pending = await AegisDb.pending();
-  if (pending.isEmpty) return true;
-  final token = await _storage.read(key: 'access');
-  if (token == null) return false;
-  final items = [
-    for (final p in pending)
-      {'op_id': p['op_id'], 'type': p['type'], 'priority': p['priority'], 'payload': jsonDecode(p['payload'] as String)}
-  ];
-  try {
-    Future<http.Response> send(String t) => http
-        .post(Uri.parse('$apiBase/sync/batches'),
-            headers: {..._json, 'Authorization': 'Bearer $t'}, body: jsonEncode({'items': items}))
-        .timeout(const Duration(seconds: 20));
-    var r = await send(token);
-    if (r.statusCode == 401 && await Api.refresh()) r = await send((await _storage.read(key: 'access'))!);
-    if (r.statusCode != 200) return false;
-    for (final res in (jsonDecode(r.body)['results'] as List)) {
-      await AegisDb.markOp(res['op_id'] as String, res['status'] == 'rejected' ? 'FAILED' : 'DONE');
-    }
-    (await SharedPreferences.getInstance()).setInt('last_sync', DateTime.now().millisecondsSinceEpoch);
-    return true;
-  } catch (_) {
-    return false; // sin red o backend caído: queda en cola
-  }
-}
-
-@pragma('vm:entry-point')
-void callbackDispatcher() {
-  Workmanager().executeTask((task, input) async => await syncPending());
-}
-
-class SyncScheduler {
-  static Future<void> init() async {
-    await Workmanager().initialize(callbackDispatcher);
-    await Workmanager().registerPeriodicTask('sync-periodic', 'sync',
-        frequency: const Duration(minutes: 15), constraints: Constraints(networkType: NetworkType.connected));
-  }
-
-  /// Tras guardar un SOS: sincroniza en cuanto haya red, con backoff exponencial.
-  static Future<void> now() async => Workmanager().registerOneOffTask('sync-now-${DateTime.now().millisecondsSinceEpoch}', 'sync',
-      constraints: Constraints(networkType: NetworkType.connected),
-      backoffPolicy: BackoffPolicy.exponential,
-      backoffPolicyDelay: const Duration(seconds: 15));
 
   // ---- recorridos y comunidad ----
   static Future<List<Map<String, dynamic>>?> _list(http.Response? r) async {
@@ -316,4 +268,52 @@ class SyncScheduler {
   static Future<Map<String, dynamic>?> liveStatus() async => _obj(await authed('GET', '/me/live'));
   static Future<void> liveStop() => authed('DELETE', '/me/live');
   static Future<List<Map<String, dynamic>>?> sleepNights() async => _list(await authed('GET', '/health/sleep?days=30'));
+}
+
+/// Envía la cola local al backend. Idempotente por op_id; emergencias primero.
+/// Devuelve true si todo lo pendiente quedó confirmado.
+Future<bool> syncPending() async {
+  final pending = await AegisDb.pending();
+  if (pending.isEmpty) return true;
+  final token = await _storage.read(key: 'access');
+  if (token == null) return false;
+  final items = [
+    for (final p in pending)
+      {'op_id': p['op_id'], 'type': p['type'], 'priority': p['priority'], 'payload': jsonDecode(p['payload'] as String)}
+  ];
+  try {
+    Future<http.Response> send(String t) => http
+        .post(Uri.parse('$apiBase/sync/batches'),
+            headers: {..._json, 'Authorization': 'Bearer $t'}, body: jsonEncode({'items': items}))
+        .timeout(const Duration(seconds: 20));
+    var r = await send(token);
+    if (r.statusCode == 401 && await Api.refresh()) r = await send((await _storage.read(key: 'access'))!);
+    if (r.statusCode != 200) return false;
+    for (final res in (jsonDecode(r.body)['results'] as List)) {
+      await AegisDb.markOp(res['op_id'] as String, res['status'] == 'rejected' ? 'FAILED' : 'DONE');
+    }
+    (await SharedPreferences.getInstance()).setInt('last_sync', DateTime.now().millisecondsSinceEpoch);
+    return true;
+  } catch (_) {
+    return false; // sin red o backend caído: queda en cola
+  }
+}
+
+@pragma('vm:entry-point')
+void callbackDispatcher() {
+  Workmanager().executeTask((task, input) async => await syncPending());
+}
+
+class SyncScheduler {
+  static Future<void> init() async {
+    await Workmanager().initialize(callbackDispatcher);
+    await Workmanager().registerPeriodicTask('sync-periodic', 'sync',
+        frequency: const Duration(minutes: 15), constraints: Constraints(networkType: NetworkType.connected));
+  }
+
+  /// Tras guardar un SOS: sincroniza en cuanto haya red, con backoff exponencial.
+  static Future<void> now() async => Workmanager().registerOneOffTask('sync-now-${DateTime.now().millisecondsSinceEpoch}', 'sync',
+      constraints: Constraints(networkType: NetworkType.connected),
+      backoffPolicy: BackoffPolicy.exponential,
+      backoffPolicyDelay: const Duration(seconds: 15));
 }

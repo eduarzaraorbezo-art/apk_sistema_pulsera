@@ -44,7 +44,7 @@ class _ProtectionScreenState extends State<ProtectionScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Protección avanzada')),
       body: ListenableBuilder(
-        listenable: Listenable.merge([s.live, s.route]),
+        listenable: Listenable.merge([s.liveShare, s.route]),
         builder: (context, _) => ListView(padding: const EdgeInsets.all(16), children: [
           // ---------- coacción ----------
           const SectionLabel('Código de coacción'),
@@ -66,7 +66,7 @@ class _ProtectionScreenState extends State<ProtectionScreen> {
           const SectionLabel('Me siguen: ubicación en vivo'),
           Card2(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              if (!s.live.active) ...[
+              if (!s.liveShare.active) ...[
                 Text('Crea un enlace que tus contactos abren sin instalar nada. Caduca solo y puedes cortarlo cuando quieras.', style: TextStyle(color: p.secondary, fontSize: 13)),
                 const SizedBox(height: 10),
                 Segmented<int>(value: _minutes, items: const {60: '1 h', 120: '2 h', 240: '4 h', 480: '8 h'}, onChanged: (v) => setState(() => _minutes = v)),
@@ -75,7 +75,7 @@ class _ProtectionScreenState extends State<ProtectionScreen> {
                   icon: const Icon(CupertinoIcons.dot_radiowaves_left_right),
                   label: const Text('Empezar a compartir'),
                   onPressed: () async {
-                    final u = await s.live.start(minutes: _minutes);
+                    final u = await s.liveShare.start(minutes: _minutes);
                     if (context.mounted && u == null) toast(context, 'No se pudo. Revisa el GPS, el permiso y tu conexión.');
                   },
                 ),
@@ -83,10 +83,10 @@ class _ProtectionScreenState extends State<ProtectionScreen> {
                 Row(children: [
                   const Icon(CupertinoIcons.circle_fill, color: AC.green, size: 12),
                   const SizedBox(width: 8),
-                  Text('Compartiendo · termina en ${_left(s.live.expires)}', style: TextStyle(fontWeight: FontWeight.w700, color: p.label)),
+                  Text('Compartiendo · termina en ${_left(s.liveShare.expires)}', style: TextStyle(fontWeight: FontWeight.w700, color: p.label)),
                 ]),
                 const SizedBox(height: 8),
-                SelectableText(s.live.url ?? '', style: TextStyle(color: AC.blue, fontSize: 13)),
+                SelectableText(s.liveShare.url ?? '', style: TextStyle(color: AC.blue, fontSize: 13)),
                 const SizedBox(height: 10),
                 Row(children: [
                   Expanded(
@@ -99,9 +99,9 @@ class _ProtectionScreenState extends State<ProtectionScreen> {
                       },
                     ),
                   ),
-                  IconButton(onPressed: () { Clipboard.setData(ClipboardData(text: s.live.url ?? '')); toast(context, 'Enlace copiado'); }, icon: const Icon(CupertinoIcons.doc_on_doc)),
+                  IconButton(onPressed: () { Clipboard.setData(ClipboardData(text: s.liveShare.url ?? '')); toast(context, 'Enlace copiado'); }, icon: const Icon(CupertinoIcons.doc_on_doc)),
                 ]),
-                TextButton(onPressed: s.live.stop, child: const Text('Dejar de compartir', style: TextStyle(color: AC.red))),
+                TextButton(onPressed: s.liveShare.stop, child: const Text('Dejar de compartir', style: TextStyle(color: AC.red))),
               ],
             ]),
           ),
