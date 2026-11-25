@@ -56,14 +56,26 @@ class _RootState extends State<Root> {
 
   // La app es usable aunque se rechacen permisos (SOS en pantalla y marcado manual siguen funcionando).
   Future<void> _startServices() async {
-    await [Permission.bluetoothScan, Permission.bluetoothConnect, Permission.locationWhenInUse, Permission.notification].request();
-    FlutterForegroundTask.init(
-      androidNotificationOptions: AndroidNotificationOptions(
-          channelId: 'band', channelName: 'Pulsera', channelDescription: 'Mantiene la conexión con la pulsera'),
-      iosNotificationOptions: const IOSNotificationOptions(),
-      foregroundTaskOptions: ForegroundTaskOptions(eventAction: ForegroundTaskEventAction.nothing()),
-    );
-    await FlutterForegroundTask.startService(notificationTitle: 'AEGIS activo', notificationText: 'Vigilando la pulsera');
+    // Android 14 cierra la app si el servicio en primer plano declara un tipo (micrófono, ubicación,
+    // Bluetooth) y el permiso correspondiente aún no está concedido: primero se piden, luego se inicia.
+    try {
+      await [Permission.bluetoothScan, Permission.bluetoothConnect, Permission.locationWhenInUse, Permission.microphone, Permission.notification].request();
+    } catch (_) {}
+    try {
+      final okBle = await Permission.bluetoothConnect.isGranted;
+      final okLoc = await Permission.locationWhenInUse.isGranted;
+      final okMic = await Permission.microphone.isGranted;
+      if (!(okBle && okLoc && okMic)) return; // sin permisos no se arranca el servicio; la app sigue usable
+      FlutterForegroundTask.init(
+        androidNotificationOptions: AndroidNotificationOptions(
+            channelId: 'band', channelName: 'Pulsera', channelDescription: 'Mantiene la conexión con la pulsera'),
+        iosNotificationOptions: const IOSNotificationOptions(),
+        foregroundTaskOptions: ForegroundTaskOptions(eventAction: ForegroundTaskEventAction.nothing()),
+      );
+      await FlutterForegroundTask.startService(notificationTitle: 'AEGIS activo', notificationText: 'Vigilando la pulsera');
+    } catch (_) {
+      // el servicio en primer plano es un extra: si falla, la app no debe cerrarse
+    }
   }
 
   @override

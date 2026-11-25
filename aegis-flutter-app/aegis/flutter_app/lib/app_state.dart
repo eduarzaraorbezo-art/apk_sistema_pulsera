@@ -315,7 +315,9 @@ class AppState extends ChangeNotifier {
   Future<void> _startServices() async {
     if (_servicesStarted) return;
     _servicesStarted = true;
-    if (onStartServices != null) await onStartServices!();
+    try {
+      if (onStartServices != null) await onStartServices!();
+    } catch (_) {}
     band.connected.stream.listen((c) {
       bandConnected = c;
       if (c) {
@@ -325,12 +327,12 @@ class AppState extends ChangeNotifier {
       }
       notifyListeners();
     });
-    await band.start();
-    await trk.recoverInterrupted();
-    await community.loadCache();
+    try { await band.start(); } catch (_) {}
+    try { await trk.recoverInterrupted(); } catch (_) {}
+    try { await community.loadCache(); } catch (_) {}
     community.startAlertPolling(trk.position, () => settings['helper_mode'] != false);
-    liveShare.restore();
-    await loadSleep();
+    liveShare.restore().catchError((_) {});
+    try { await loadSleep(); } catch (_) {}
     _poll = Timer.periodic(const Duration(seconds: 3), (_) => refresh());
     _tick = Timer.periodic(const Duration(seconds: 1), (_) => _onTick());
     _flush = Timer.periodic(const Duration(minutes: 2), (_) { flushHealth(); rec.flush(); });
