@@ -43,7 +43,7 @@ class SosHandler {
       Position? pos;
       try {
         pos = await Geolocator.getCurrentPosition(
-            locationSettings: const LocationSettings(accuracy: LocationAccuracy.high, timeLimit: Duration(seconds: 15)));
+            desiredAccuracy: LocationAccuracy.high, timeLimit: Duration(seconds: 15));
       } catch (_) {
         pos = await Geolocator.getLastKnownPosition();
       }

@@ -840,7 +840,7 @@ class AppState extends ChangeNotifier {
     try {
       return await Geolocator.getLastKnownPosition() ??
           await Geolocator.getCurrentPosition(
-              locationSettings: const LocationSettings(accuracy: LocationAccuracy.high, timeLimit: Duration(seconds: 10)));
+              desiredAccuracy: LocationAccuracy.high, timeLimit: Duration(seconds: 10));
     } catch (_) {
       return null;
     }

@@ -97,7 +97,7 @@ class SimBand {
     if (forceHr != null) {
       _hr = forceHr.toDouble();
     } else {
-      if (_rnd.nextInt(25) == 0) _target = 62 + _rnd.nextInt(40);
+      if (_rnd.nextInt(25) == 0) _target = 62.0 + _rnd.nextInt(40);
       _hr += (_target - _hr) * 0.15 + (_rnd.nextDouble() - 0.5) * 3;
     }
     _steps += _rnd.nextInt(5);

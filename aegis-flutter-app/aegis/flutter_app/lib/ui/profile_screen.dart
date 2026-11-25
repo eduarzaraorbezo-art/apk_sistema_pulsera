@@ -32,7 +32,7 @@ class MedicalIdSheet extends StatelessWidget {
 
     final age = profile['birth_year'] is int ? '${DateTime.now().year - (profile['birth_year'] as int)} años' : '—';
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      const Icon(CupertinoIcons.heart_text_square_fill, color: AC.red, size: 44),
+      const Icon(CupertinoIcons.heart_fill, color: AC.red, size: 44),
       Text('Ficha médica', textAlign: TextAlign.center, style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: p.label)),
       const SizedBox(height: 12),
       Group(children: [
@@ -130,7 +130,7 @@ class ProfileScreen extends StatelessWidget {
         ]),
         const SectionLabel('Salud'),
           Group(children: [
-            Row2(icon: CupertinoIcons.heart_text_square_fill, color: AC.red, title: 'Ficha médica', subtitle: 'Visible desde Inicio para socorristas', chevron: true, onTap: () => _editMedical(context, s)),
+            Row2(icon: CupertinoIcons.heart_fill, color: AC.red, title: 'Ficha médica', subtitle: 'Visible desde Inicio para socorristas', chevron: true, onTap: () => _editMedical(context, s)),
             Row2(icon: CupertinoIcons.waveform_path_ecg, color: AC.pink, title: 'Rango de pulsaciones', value: '${s.hrMin}–${s.hrMax}', chevron: true, onTap: () => _editRange(context, s)),
           ]),
         ],

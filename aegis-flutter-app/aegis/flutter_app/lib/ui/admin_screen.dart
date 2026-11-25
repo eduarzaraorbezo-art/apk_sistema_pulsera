@@ -195,7 +195,7 @@ class _UsersScreenState extends State<UsersScreen> {
         const SizedBox(height: 12),
         Group(children: [
           Row2(
-            icon: CupertinoIcons.key_fill, color: AC.orange, title: 'Restablecer contraseña', subtitle: 'Genera una temporal', chevron: true,
+            icon: CupertinoIcons.lock_rotation, color: AC.orange, title: 'Restablecer contraseña', subtitle: 'Genera una temporal', chevron: true,
             onTap: () async {
               final t = genTempPassword();
               final e = await Api.adminAction(id, 'reset-password', {'temp_password': t});

@@ -93,7 +93,7 @@ class _HealthScreenState extends State<HealthScreen> {
             trailing: Switch.adaptive(value: s.demo, onChanged: s.bandConnected ? null : s.setDemo),
           ),
           if (s.demo)
-            Row2(icon: CupertinoIcons.bolt_heart_fill, color: AC.pink, title: 'Simular pico de pulsaciones', chevron: true, onTap: s.simulateSpike),
+            Row2(icon: CupertinoIcons.bolt_fill, color: AC.pink, title: 'Simular pico de pulsaciones', chevron: true, onTap: s.simulateSpike),
         ]),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8),

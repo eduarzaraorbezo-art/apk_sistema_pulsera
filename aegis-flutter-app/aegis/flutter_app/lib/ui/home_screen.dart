@@ -98,7 +98,7 @@ class HomeScreen extends StatelessWidget {
               icon: CupertinoIcons.location_fill, color: AC.green, label: 'Compartir ubicación',
               onTap: () async { if (!await s.alertContacts() && context.mounted) toast(context, 'Agrega contactos primero'); }),
           QuickAction(icon: CupertinoIcons.phone_fill, color: AC.red, label: 'Llamar 105', onTap: () => launchUrl(Uri.parse('tel:105'))),
-          QuickAction(icon: CupertinoIcons.heart_text_square_fill, color: AC.orange, label: 'Ficha médica', onTap: () => showSheet(context, (_) => MedicalIdSheet(profile: s.profile))),
+          QuickAction(icon: CupertinoIcons.heart_fill, color: AC.orange, label: 'Ficha médica', onTap: () => showSheet(context, (_) => MedicalIdSheet(profile: s.profile))),
         ]),
         const SizedBox(height: 8),
         Row(crossAxisAlignment: CrossAxisAlignment.start, children: [

@@ -221,7 +221,7 @@ class TrackState extends ChangeNotifier {
     if (l != null && DateTime.now().difference(l.timestamp).inSeconds < 60) return l;
     try {
       return await Geolocator.getLastKnownPosition() ??
-          await Geolocator.getCurrentPosition(locationSettings: const LocationSettings(accuracy: LocationAccuracy.high, timeLimit: Duration(seconds: 10)));
+          await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high, timeLimit: Duration(seconds: 10));
     } catch (_) {
       return null;
     }
