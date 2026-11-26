@@ -37,19 +37,15 @@ Future<void> triggerSos(BuildContext context) async {
       Text('Quedó guardado en tu teléfono y se enviará en cuanto haya conexión. Esta app no avisa por sí sola a ninguna autoridad: llama tú.',
           textAlign: TextAlign.center, style: TextStyle(fontSize: 15, color: p.secondary)),
       const SizedBox(height: 16),
-      FilledButton.icon(
-          style: FilledButton.styleFrom(backgroundColor: AC.red),
-          onPressed: () => launchUrl(Uri.parse('tel:105')),
-          icon: const Icon(CupertinoIcons.phone_fill),
-          label: const Text('Llamar al 105')),
-      const SizedBox(height: 10),
-      FilledButton.icon(
-          style: FilledButton.styleFrom(backgroundColor: AC.blue),
-          onPressed: () async {
+      RoundRow([
+        RoundBtn(icon: CupertinoIcons.phone_fill, label: 'Llamar 105', color: AC.red, size: 76, onTap: () => launchUrl(Uri.parse('tel:105'))),
+        RoundBtn(
+          icon: CupertinoIcons.chat_bubble_fill, label: 'Avisar contactos', color: AC.blue, size: 76,
+          onTap: () async {
             if (!await s.alertContacts(sosActive: true) && c.mounted) toast(c, 'Agrega contactos primero');
           },
-          icon: const Icon(CupertinoIcons.chat_bubble_fill),
-          label: const Text('Avisar a mis contactos')),
+        ),
+      ]),
       const SizedBox(height: 6),
       TextButton(
         onPressed: id == null
@@ -209,14 +205,9 @@ class _AlertBanner extends StatelessWidget {
         const SizedBox(height: 6),
         Text('Estuvo fuera de tu rango (${s.hrMin}–${s.hrMax}) varias lecturas seguidas. ¿Estás bien?', style: TextStyle(color: Pal.of(context).label)),
         const SizedBox(height: 10),
-        Row(children: [
-          Expanded(child: OutlinedButton(onPressed: s.dismissAlert, child: const Text('Estoy bien'))),
-          const SizedBox(width: 10),
-          Expanded(
-              child: FilledButton(
-                  style: FilledButton.styleFrom(backgroundColor: AC.red, minimumSize: const Size.fromHeight(40)),
-                  onPressed: () { s.dismissAlert(); triggerSos(context); },
-                  child: const Text('Pedir ayuda'))),
+        RoundRow([
+          RoundBtn(icon: CupertinoIcons.check_mark, label: 'Estoy bien', color: AC.green, onTap: s.dismissAlert),
+          RoundBtn(icon: CupertinoIcons.exclamationmark_triangle_fill, label: 'Pedir ayuda', color: AC.red, onTap: () { s.dismissAlert(); triggerSos(context); }),
         ]),
       ]),
     );

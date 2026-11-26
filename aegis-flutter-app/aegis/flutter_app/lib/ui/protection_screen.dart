@@ -71,13 +71,14 @@ class _ProtectionScreenState extends State<ProtectionScreen> {
                 const SizedBox(height: 10),
                 Segmented<int>(value: _minutes, items: const {60: '1 h', 120: '2 h', 240: '4 h', 480: '8 h'}, onChanged: (v) => setState(() => _minutes = v)),
                 const SizedBox(height: 10),
-                FilledButton.icon(
-                  icon: const Icon(CupertinoIcons.dot_radiowaves_left_right),
-                  label: const Text('Empezar a compartir'),
-                  onPressed: () async {
-                    final u = await s.liveShare.start(minutes: _minutes);
-                    if (context.mounted && u == null) toast(context, 'No se pudo. Revisa el GPS, el permiso y tu conexión.');
-                  },
+                Center(
+                  child: RoundBtn(
+                    icon: CupertinoIcons.dot_radiowaves_left_right, label: 'Empezar a compartir', color: AC.green, size: 72,
+                    onTap: () async {
+                      final u = await s.liveShare.start(minutes: _minutes);
+                      if (context.mounted && u == null) toast(context, 'No se pudo. Revisa el GPS, el permiso y tu conexión.');
+                    },
+                  ),
                 ),
               ] else ...[
                 Row(children: [
@@ -88,20 +89,17 @@ class _ProtectionScreenState extends State<ProtectionScreen> {
                 const SizedBox(height: 8),
                 SelectableText(s.liveShare.url ?? '', style: TextStyle(color: AC.blue, fontSize: 13)),
                 const SizedBox(height: 10),
-                Row(children: [
-                  Expanded(
-                    child: FilledButton.icon(
-                      icon: const Icon(CupertinoIcons.paperplane_fill),
-                      label: const Text('Enviar a mis contactos'),
-                      onPressed: () async {
-                        final o = await s.sendLiveLink();
-                        if (context.mounted) toast(context, o);
-                      },
-                    ),
+                RoundRow([
+                  RoundBtn(
+                    icon: CupertinoIcons.paperplane_fill, label: 'Enviar a contactos', color: AC.blue,
+                    onTap: () async {
+                      final o = await s.sendLiveLink();
+                      if (context.mounted) toast(context, o);
+                    },
                   ),
-                  IconButton(onPressed: () { Clipboard.setData(ClipboardData(text: s.liveShare.url ?? '')); toast(context, 'Enlace copiado'); }, icon: const Icon(CupertinoIcons.doc_on_doc)),
+                  RoundBtn(icon: CupertinoIcons.doc_on_doc_fill, label: 'Copiar enlace', color: AC.teal, onTap: () { Clipboard.setData(ClipboardData(text: s.liveShare.url ?? '')); toast(context, 'Enlace copiado'); }),
+                  RoundBtn(icon: CupertinoIcons.stop_fill, label: 'Detener', color: AC.red, onTap: s.liveShare.stop),
                 ]),
-                TextButton(onPressed: s.liveShare.stop, child: const Text('Dejar de compartir', style: TextStyle(color: AC.red))),
               ],
             ]),
           ),

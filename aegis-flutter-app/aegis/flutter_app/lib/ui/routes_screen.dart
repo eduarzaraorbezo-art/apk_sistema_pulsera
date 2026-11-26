@@ -41,11 +41,13 @@ class RoutesScreen extends StatelessWidget {
               Expanded(child: StatTile(icon: CupertinoIcons.speedometer, label: 'Ritmo', value: t.paceMinPerKm == 0 ? '—' : '${t.paceMinPerKm.toStringAsFixed(1)} min/km', color: AC.purple)),
             ]),
             const SizedBox(height: 14),
-            FilledButton.icon(
-              style: FilledButton.styleFrom(backgroundColor: t.active ? AC.red : AC.green, minimumSize: const Size.fromHeight(54), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
-              icon: Icon(t.active ? CupertinoIcons.stop_fill : CupertinoIcons.play_fill),
-              label: Text(t.active ? 'Terminar recorrido' : 'Empezar recorrido', style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
-              onPressed: () async {
+            Center(
+              child: RoundBtn(
+                size: 80,
+                color: t.active ? AC.red : AC.green,
+                icon: t.active ? CupertinoIcons.stop_fill : CupertinoIcons.play_fill,
+                label: t.active ? 'Terminar recorrido' : 'Empezar recorrido',
+                onTap: () async {
                 if (t.active) {
                   await t.stop();
                   s.syncNow();
@@ -54,6 +56,7 @@ class RoutesScreen extends StatelessWidget {
                   if (!ok && context.mounted && t.error != null) toast(context, t.error!);
                 }
               },
+            ),
             ),
             if (t.error != null && !t.active) Padding(padding: const EdgeInsets.only(top: 8), child: Text(t.error!, style: const TextStyle(color: AC.red))),
             const SizedBox(height: 8),
@@ -91,11 +94,7 @@ class RoutesScreen extends StatelessWidget {
           MapView(track: pts, height: 260),
           const SizedBox(height: 12),
           if (pts.isNotEmpty)
-            OutlinedButton.icon(
-              icon: const Icon(CupertinoIcons.map),
-              label: const Text('Ver inicio en Mapas'),
-              onPressed: () => launchUrl(Uri.parse('geo:${pts.first[0]},${pts.first[1]}?q=${pts.first[0]},${pts.first[1]}')),
-            ),
+            Center(child: RoundBtn(icon: CupertinoIcons.map_fill, label: 'Ver en Mapas', color: AC.blue, onTap: () => launchUrl(Uri.parse('geo:${pts.first[0]},${pts.first[1]}?q=${pts.first[0]},${pts.first[1]}')))),
           TextButton(
             onPressed: () async { Navigator.pop(c); await s.trk.remove(r['id'] as String); },
             child: const Text('Eliminar recorrido', style: TextStyle(color: AC.red)),

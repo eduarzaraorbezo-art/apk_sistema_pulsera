@@ -151,16 +151,13 @@ class _CommunityScreenState extends State<CommunityScreen> {
         const SizedBox(height: 6),
         Text('${pl['confirms']} confirman · ${pl['reports']} reportes', textAlign: TextAlign.center, style: TextStyle(color: p.secondary)),
         const SizedBox(height: 14),
-        if (pl['mine'] != true)
-          Row(children: [
-            Expanded(child: FilledButton.icon(onPressed: () async { Navigator.pop(c); await Api.voteCommunityPlace(pl['id'] as String, 'confirm'); _refresh(); }, icon: const Icon(CupertinoIcons.hand_thumbsup_fill), label: const Text('Confirmo'))),
-            const SizedBox(width: 10),
-            Expanded(child: OutlinedButton.icon(onPressed: () async { Navigator.pop(c); await Api.voteCommunityPlace(pl['id'] as String, 'report'); _refresh(); }, icon: const Icon(CupertinoIcons.flag_fill), label: const Text('Reportar'))),
-          ]),
-        OutlinedButton.icon(
-          onPressed: () => launchUrl(Uri.parse('geo:${pl['lat']},${pl['lon']}?q=${pl['lat']},${pl['lon']}')),
-          icon: const Icon(CupertinoIcons.location), label: const Text('Cómo llegar'),
-        ),
+        RoundRow([
+          if (pl['mine'] != true) ...[
+            RoundBtn(icon: CupertinoIcons.hand_thumbsup_fill, label: 'Confirmo', color: AC.green, onTap: () async { Navigator.pop(c); await Api.voteCommunityPlace(pl['id'] as String, 'confirm'); _refresh(); }),
+            RoundBtn(icon: CupertinoIcons.flag_fill, label: 'Reportar', color: AC.orange, onTap: () async { Navigator.pop(c); await Api.voteCommunityPlace(pl['id'] as String, 'report'); _refresh(); }),
+          ],
+          RoundBtn(icon: CupertinoIcons.location_fill, label: 'Cómo llegar', color: AC.blue, onTap: () => launchUrl(Uri.parse('geo:${pl['lat']},${pl['lon']}?q=${pl['lat']},${pl['lon']}'))),
+        ]),
         if (pl['mine'] == true)
           TextButton(onPressed: () async { Navigator.pop(c); await Api.deleteCommunityPlace(pl['id'] as String); _refresh(); }, child: const Text('Eliminar mi lugar', style: TextStyle(color: AC.red))),
       ]);

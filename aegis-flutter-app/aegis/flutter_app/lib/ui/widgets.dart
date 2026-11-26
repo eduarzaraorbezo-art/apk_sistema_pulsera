@@ -361,7 +361,82 @@ class Segmented<T> extends StatelessWidget {
   }
 }
 
-/// Botón circular de acción rápida.
+/// Esfera de cristal con brillo: base de todos los botones redondos.
+class _Orb extends StatelessWidget {
+  const _Orb({required this.icon, required this.color, required this.size, this.outline = false, this.loading = false});
+  final IconData icon;
+  final Color color;
+  final double size;
+  final bool outline, loading;
+  @override
+  Widget build(BuildContext context) {
+    final p = Pal.of(context);
+    final fg = outline ? color : Colors.white;
+    return Container(
+      width: size, height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: outline
+            ? null
+            : RadialGradient(center: const Alignment(-0.45, -0.55), radius: 1.05, colors: [Color.lerp(color, Colors.white, 0.38)!, color, Color.lerp(color, Colors.black, 0.18)!], stops: const [0, 0.55, 1]),
+        color: outline ? color.withOpacity(0.12) : null,
+        border: Border.all(color: outline ? color.withOpacity(0.55) : Colors.white.withOpacity(0.45), width: outline ? 1.5 : 1),
+        boxShadow: outline ? null : [BoxShadow(color: color.withOpacity(p.dark ? 0.45 : 0.35), blurRadius: size * 0.28, offset: Offset(0, size * 0.09))],
+      ),
+      child: Stack(alignment: Alignment.center, children: [
+        if (!outline)
+          Positioned(
+            top: size * 0.07, left: size * 0.2, right: size * 0.2, height: size * 0.28,
+            child: DecoratedBox(decoration: BoxDecoration(borderRadius: BorderRadius.circular(size), gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Colors.white.withOpacity(0.50), Colors.white.withOpacity(0)]))),
+          ),
+        loading ? SizedBox(width: size * 0.36, height: size * 0.36, child: CircularProgressIndicator(strokeWidth: 2.6, color: fg)) : Icon(icon, color: fg, size: size * 0.44),
+      ]),
+    );
+  }
+}
+
+/// Botón circular con el icono de lo que hace y su nombre debajo.
+class RoundBtn extends StatelessWidget {
+  const RoundBtn({super.key, required this.icon, required this.label, required this.onTap, this.color = AC.blue, this.size = 64, this.outline = false, this.loading = false});
+  final IconData icon;
+  final String label;
+  final VoidCallback? onTap;
+  final Color color;
+  final double size;
+  final bool outline, loading;
+  @override
+  Widget build(BuildContext context) {
+    final p = Pal.of(context);
+    final off = onTap == null || loading;
+    return Opacity(
+      opacity: onTap == null ? 0.45 : 1,
+      child: PressScale(
+        onTap: off ? null : onTap,
+        child: SizedBox(
+          width: size + 22,
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            _Orb(icon: icon, color: color, size: size, outline: outline, loading: loading),
+            const SizedBox(height: 7),
+            Text(label, textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: p.label, height: 1.15)),
+          ]),
+        ),
+      ),
+    );
+  }
+}
+
+/// Fila de botones redondos repartidos por igual.
+class RoundRow extends StatelessWidget {
+  const RoundRow(this.children, {super.key});
+  final List<Widget> children;
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: children),
+      );
+}
+
+/// Acceso rápido circular del inicio.
 class QuickAction extends StatelessWidget {
   const QuickAction({super.key, required this.icon, required this.color, required this.label, required this.onTap});
   final IconData icon;
@@ -375,16 +450,7 @@ class QuickAction extends StatelessWidget {
       child: PressScale(
         onTap: onTap,
         child: Column(children: [
-          Container(
-            width: 62, height: 62,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(22),
-              gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color.lerp(color, Colors.white, 0.22)!, color]),
-              border: Border.all(color: Colors.white.withOpacity(0.35), width: 0.8),
-              boxShadow: [BoxShadow(color: color.withOpacity(p.dark ? 0.35 : 0.28), blurRadius: 12, offset: const Offset(0, 5))],
-            ),
-            child: Icon(icon, color: Colors.white, size: 27),
-          ),
+          _Orb(icon: icon, color: color, size: 62),
           const SizedBox(height: 7),
           Text(label, textAlign: TextAlign.center, maxLines: 2, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: p.label)),
         ]),

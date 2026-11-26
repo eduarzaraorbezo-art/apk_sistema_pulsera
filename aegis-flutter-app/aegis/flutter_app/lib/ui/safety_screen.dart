@@ -44,7 +44,7 @@ class _SafetyScreenState extends State<SafetyScreen> {
               const SizedBox(height: 10),
               Segmented<int>(value: _minutes, items: const {15: '15 min', 30: '30 min', 60: '1 h', 120: '2 h'}, onChanged: (v) => setState(() => _minutes = v)),
               const SizedBox(height: 14),
-              FilledButton.icon(onPressed: () => s.startCheckin(_label, _minutes), icon: const Icon(CupertinoIcons.timer), label: const Text('Iniciar check-in')),
+              RoundBtn(icon: CupertinoIcons.timer, label: 'Iniciar check-in', color: AC.blue, size: 76, onTap: () => s.startCheckin(_label, _minutes)),
             ]),
           )
         else
@@ -58,14 +58,10 @@ class _SafetyScreenState extends State<SafetyScreen> {
                 child: Text(mmss(s.checkinRemainingSec), style: TextStyle(fontSize: 40, fontWeight: FontWeight.w800, color: p.label)),
               ),
               const SizedBox(height: 14),
-              FilledButton.icon(
-                  style: FilledButton.styleFrom(backgroundColor: AC.green),
-                  onPressed: s.confirmCheckin, icon: const Icon(CupertinoIcons.check_mark_circled_solid), label: const Text('Estoy bien')),
-              const SizedBox(height: 8),
-              Row(children: [
-                Expanded(child: OutlinedButton(onPressed: () => s.extendCheckin(15), child: const Text('+15 min'))),
-                const SizedBox(width: 10),
-                Expanded(child: OutlinedButton(onPressed: s.confirmCheckin, child: const Text('Cancelar'))),
+              RoundRow([
+                RoundBtn(icon: CupertinoIcons.check_mark, label: 'Estoy bien', color: AC.green, size: 76, onTap: s.confirmCheckin),
+                RoundBtn(icon: CupertinoIcons.plus, label: '+15 min', color: AC.orange, size: 76, onTap: () => s.extendCheckin(15)),
+                RoundBtn(icon: CupertinoIcons.xmark, label: 'Cancelar', color: AC.gray, size: 76, onTap: s.confirmCheckin),
               ]),
               const SizedBox(height: 8),
               Text('Funciona mientras AEGIS siga activo en el teléfono (no la cierres desde recientes).', textAlign: TextAlign.center, style: TextStyle(fontSize: 12, color: p.secondary)),

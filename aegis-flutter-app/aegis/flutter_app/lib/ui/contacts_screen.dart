@@ -32,16 +32,17 @@ class ContactsScreen extends StatelessWidget {
               Text('Aún no tienes contactos', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: p.label)),
               Text('Agrega a quienes deben recibir tu alerta y tu ubicación.', textAlign: TextAlign.center, style: TextStyle(color: p.secondary)),
               const SizedBox(height: 12),
-              FilledButton(onPressed: () => _add(context, s), child: const Text('Agregar contacto')),
+              RoundBtn(icon: CupertinoIcons.person_add_solid, label: 'Agregar', color: AC.blue, onTap: () => _add(context, s)),
             ]),
           )
         else ...[
-          FilledButton.icon(
-            style: FilledButton.styleFrom(backgroundColor: AC.green),
-            onPressed: () async { if (!await s.alertContacts() && context.mounted) toast(context, 'No se pudo abrir mensajes'); },
-            icon: const Icon(CupertinoIcons.location_fill),
-            label: const Text('Compartir mi ubicación con todos'),
-          ),
+          RoundRow([
+            RoundBtn(
+              icon: CupertinoIcons.location_fill, label: 'Compartir ubicación', color: AC.green, size: 72,
+              onTap: () async { if (!await s.alertContacts() && context.mounted) toast(context, 'No se pudo abrir mensajes'); },
+            ),
+            RoundBtn(icon: CupertinoIcons.person_add_solid, label: 'Agregar', color: AC.blue, size: 72, onTap: () => _add(context, s)),
+          ]),
           const SizedBox(height: 14),
           Group(children: [
             for (var i = 0; i < s.contacts.length; i++)
@@ -91,12 +92,11 @@ class ContactsScreen extends StatelessWidget {
         Text(name, textAlign: TextAlign.center, style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: p.label)),
         Text(phone, textAlign: TextAlign.center, style: TextStyle(color: p.secondary)),
         const SizedBox(height: 14),
-        FilledButton.icon(onPressed: () { launchUrl(Uri.parse('tel:${_clean(phone)}')); Navigator.pop(c); }, icon: const Icon(CupertinoIcons.phone_fill), label: const Text('Llamar')),
-        const SizedBox(height: 8),
-        FilledButton.icon(
-            style: FilledButton.styleFrom(backgroundColor: AC.green),
-            onPressed: () { launchUrl(Uri.parse('sms:${_clean(phone)}')); Navigator.pop(c); },
-            icon: const Icon(CupertinoIcons.chat_bubble_fill), label: const Text('Enviar mensaje')),
+        RoundRow([
+          RoundBtn(icon: CupertinoIcons.phone_fill, label: 'Llamar', color: AC.green, size: 72, onTap: () { launchUrl(Uri.parse('tel:${_clean(phone)}')); Navigator.pop(c); }),
+          RoundBtn(icon: CupertinoIcons.chat_bubble_fill, label: 'Mensaje', color: AC.blue, size: 72, onTap: () { launchUrl(Uri.parse('sms:${_clean(phone)}')); Navigator.pop(c); }),
+          RoundBtn(icon: CupertinoIcons.paperplane_fill, label: 'WhatsApp', color: AC.teal, size: 72, onTap: () { launchUrl(Uri.parse('https://wa.me/${_clean(phone).replaceAll('+', '')}'), mode: LaunchMode.externalApplication); Navigator.pop(c); }),
+        ]),
       ]);
     });
   }
