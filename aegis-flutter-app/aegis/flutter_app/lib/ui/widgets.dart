@@ -563,6 +563,15 @@ String errText(String? c) {
     case 'email_taken': return 'Ese usuario o correo ya existe.';
     case 'invalid_phone': return 'Teléfono no válido (usa 6-15 dígitos, con código de país).';
     case 'image_too_large': return 'La imagen pesa demasiado (máximo 256 KB).';
+    case 'invalid_code': return 'Código incorrecto o vencido. Pide uno nuevo.';
+    case 'invalid_email': return 'Escribe un correo válido.';
+    case 'invalid_plan': return 'Plan no válido.';
+    case 'registration_closed': return 'El registro está cerrado. Pide tu cuenta al administrador.';
+    case 'trial_already_used': return 'Ya usaste tu prueba gratis.';
+    case 'already_premium': return 'Ya tienes Premium.';
+    case 'payment_pending': return 'Ya tienes un pago en revisión. Espera a que lo validemos.';
+    case 'invalid_method': return 'Ese medio de pago no está disponible.';
+    case 'already_reviewed': return 'Ese pago ya fue revisado.';
     case 'forbidden': return 'No tienes permiso para esto.';
     case 'mfa_required': return 'Esta acción requiere verificar MFA.';
     case 'plan_limit_messages': return 'Llegaste al límite diario de mensajes de tu plan.';

@@ -177,6 +177,40 @@ class Api {
     return [for (final x in jsonDecode(r.body) as List) Map<String, dynamic>.from(x as Map)];
   }
 
+  // ---- cuenta: recuperar contraseña y registro (sin sesión) ----
+  static Future<String?> _public(String path, Map<String, Object?> body, int ok) async {
+    try {
+      final r = await http.post(Uri.parse('$apiBase$path'), headers: _json, body: jsonEncode(body)).timeout(const Duration(seconds: 20));
+      return r.statusCode == ok ? null : errorOf(r);
+    } catch (_) {
+      return 'network';
+    }
+  }
+
+  static Future<String?> forgotPassword(String email) => _public('/auth/forgot', {'email': email.trim()}, 200);
+  static Future<String?> resetPassword(String email, String code, String pw) => _public('/auth/reset', {'email': email.trim(), 'code': code.trim(), 'new_password': pw}, 200);
+  static Future<String?> register(String email, String pw, String? phone, String plan) =>
+      _public('/auth/register', {'email': email.trim(), 'password': pw, 'plan': plan, if (phone != null && phone.trim().isNotEmpty) 'phone': phone.trim()}, 201);
+
+  // ---- planes y pagos ----
+  static Future<Map<String, dynamic>?> billingPlans() => _getMap('/billing/plans');
+  static Future<Map<String, dynamic>?> myPayments() => _getMap('/billing/payments');
+  static Future<String?> startTrial() async {
+    final r = await authed('POST', '/billing/trial');
+    return r?.statusCode == 200 ? null : errorOf(r);
+  }
+
+  static Future<String?> declarePayment(String method, String reference, int months) async {
+    final r = await authed('POST', '/billing/payments', {'method': method, 'reference': reference, 'months': months});
+    return r?.statusCode == 201 ? null : errorOf(r);
+  }
+
+  static Future<Map<String, dynamic>?> adminPayments({String? status}) => _getMap('/admin/payments${status == null ? '' : '?status=$status'}');
+  static Future<String?> adminReviewPayment(String id, bool approve) async {
+    final r = await authed('POST', '/admin/payments/$id/${approve ? 'approve' : 'reject'}');
+    return r?.statusCode == 200 ? null : errorOf(r);
+  }
+
   // ---- administración ----
   static Future<List<Map<String, dynamic>>?> adminUsers() async {
     final r = await authed('GET', '/admin/users');

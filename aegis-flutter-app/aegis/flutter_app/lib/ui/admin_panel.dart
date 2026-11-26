@@ -227,9 +227,20 @@ class AdminCommunity extends StatelessWidget {
               Icon(CupertinoIcons.chevron_right, size: 16, color: p.secondary),
             ]),
           );
-          if (items.isEmpty) return [head, Card2(child: Text('No hay zonas marcadas todavía.', style: TextStyle(color: p.secondary)))];
+          final pays = Card2(
+            onTap: () => Navigator.push(context, CupertinoPageRoute<void>(builder: (_) => const AdminPayments())),
+            color: AC.green.withOpacity(0.14),
+            child: Row(children: [
+              const Icon(CupertinoIcons.creditcard_fill, color: AC.green),
+              const SizedBox(width: 12),
+              Expanded(child: Text('Pagos y suscripciones Premium', style: TextStyle(fontWeight: FontWeight.w700, color: p.label))),
+              Icon(CupertinoIcons.chevron_right, size: 16, color: p.secondary),
+            ]),
+          );
+          if (items.isEmpty) return [head, pays, Card2(child: Text('No hay zonas marcadas todavía.', style: TextStyle(color: p.secondary)))];
           return [
             head,
+            pays,
             for (final it in items)
               Card2(
                 color: _i(it['reports']) > 0 ? AC.red.withOpacity(0.10) : null,
@@ -568,6 +579,54 @@ class _NewAnnouncementState extends State<_NewAnnouncement> {
               },
             ),
           ]),
+        ),
+      );
+}
+
+
+// =====================================================================================================
+// PAGOS PREMIUM (validar Yape / Plin / transferencia / tarjeta)
+// =====================================================================================================
+class AdminPayments extends StatelessWidget {
+  const AdminPayments({super.key});
+  @override
+  Widget build(BuildContext context) => Scaffold(
+        appBar: AppBar(),
+        body: _Loader(
+          title: 'Pagos',
+          subtitle: 'Valida los pagos declarados por los usuarios',
+          load: Api.adminPayments,
+          builder: (context, d, reload) {
+            final p = Pal.of(context);
+            final items = [for (final x in (d['items'] as List)) Map<String, dynamic>.from(x as Map)];
+            if (items.isEmpty) return [Card2(child: Text('Aún no hay pagos.', style: TextStyle(color: p.secondary)))];
+            Future<void> review(Map<String, dynamic> x, bool ok) async {
+              final e = await Api.adminReviewPayment('${x['id']}', ok);
+              if (context.mounted) toast(context, e == null ? (ok ? 'Pago aprobado: usuario Premium' : 'Pago rechazado') : errText(e));
+              reload();
+            }
+
+            return [
+              for (final x in items)
+                Card2(
+                  color: x['status'] == 'PENDING' ? AC.orange.withOpacity(0.12) : null,
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Row(children: [
+                      Expanded(child: Text('${x['email']}', style: TextStyle(fontWeight: FontWeight.w800, color: p.label))),
+                      Pill('${x['status']}', color: x['status'] == 'APPROVED' ? AC.green : (x['status'] == 'REJECTED' ? AC.red : AC.orange)),
+                    ]),
+                    const SizedBox(height: 4),
+                    Text('S/ ${((x['amount_cents'] as num) / 100).toStringAsFixed(2)} · ${x['method']} · ${x['months']} mes(es)', style: TextStyle(color: p.secondary)),
+                    Text('Ref.: ${x['reference']}', style: TextStyle(color: p.label, fontWeight: FontWeight.w600)),
+                    if (x['status'] == 'PENDING')
+                      RoundRow([
+                        RoundBtn(icon: CupertinoIcons.check_mark, label: 'Aprobar', color: AC.green, size: 54, onTap: () => review(x, true)),
+                        RoundBtn(icon: CupertinoIcons.xmark, label: 'Rechazar', color: AC.red, size: 54, onTap: () => review(x, false)),
+                      ]),
+                  ]),
+                ),
+            ];
+          },
         ),
       );
 }

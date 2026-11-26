@@ -367,6 +367,17 @@ class AppState extends ChangeNotifier {
     return null;
   }
 
+  /// Vuelve a leer el rol (tras una prueba gratis o un pago aprobado).
+  Future<void> reloadAccount() async {
+    final r = await Api.me();
+    if (r != null && r.statusCode == 200) {
+      final o = jsonDecode(r.body) as Map<String, dynamic>;
+      role = o['role'] as String? ?? role;
+      await _p?.setString('role', role);
+      notifyListeners();
+    }
+  }
+
   Future<bool> startMfa() async {
     final o = await Api.mfaSetup();
     if (o == null) return false;

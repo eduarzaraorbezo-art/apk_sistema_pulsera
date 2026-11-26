@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../app_state.dart';
+import '../sync/sync_service.dart';
+import 'billing_screen.dart';
 import 'theme.dart';
 import 'widgets.dart';
 
@@ -83,8 +85,13 @@ class _LoginScreenState extends State<LoginScreen> {
             if (_err != null) Padding(padding: const EdgeInsets.only(top: 10), child: Text(_err!, style: const TextStyle(color: AC.red, fontSize: 14))),
             const SizedBox(height: 16),
             FilledButton(onPressed: _busy ? null : _go, child: Text(_busy ? 'Entrando…' : 'Entrar')),
-            const SizedBox(height: 10),
-            Text('¿Sin cuenta? Tu cuenta la crea el administrador de AEGIS.', textAlign: TextAlign.center, style: TextStyle(fontSize: 13, color: Pal.of(context).secondary)),
+            const SizedBox(height: 6),
+            TextButton(onPressed: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const ForgotPasswordScreen())), child: const Text('¿Olvidaste tu contraseña?')),
+            OutlinedButton.icon(
+              onPressed: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const RegisterScreen())),
+              icon: const Icon(CupertinoIcons.person_add_solid),
+              label: const Text('Crear cuenta'),
+            ),
           ]),
         ]),
       );
@@ -226,6 +233,189 @@ class _MfaSetupScreenState extends State<MfaSetupScreen> {
             ),
           ],
           TextButton(onPressed: s.signOut, child: const Text('Cerrar sesión')),
+        ]),
+      ]),
+    );
+  }
+}
+
+
+// =====================================================================================================
+// RECUPERAR CONTRASEÑA
+// =====================================================================================================
+class ForgotPasswordScreen extends StatefulWidget {
+  const ForgotPasswordScreen({super.key});
+  @override
+  State<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
+}
+
+class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
+  final _email = TextEditingController(), _code = TextEditingController(), _pw = TextEditingController();
+  bool _sent = false, _busy = false;
+  String? _err;
+
+  Future<void> _send() async {
+    if (_email.text.trim().isEmpty) {
+      setState(() => _err = 'Escribe tu correo.');
+      return;
+    }
+    setState(() { _busy = true; _err = null; });
+    final e = await Api.forgotPassword(_email.text);
+    if (!mounted) return;
+    setState(() { _busy = false; _err = e == null ? null : errText(e); _sent = e == null; });
+  }
+
+  Future<void> _reset() async {
+    setState(() { _busy = true; _err = null; });
+    final e = await Api.resetPassword(_email.text, _code.text, _pw.text);
+    if (!mounted) return;
+    setState(() => _busy = false);
+    if (e == null) {
+      toast(context, 'Contraseña cambiada. Ya puedes entrar.');
+      Navigator.pop(context);
+    } else {
+      setState(() => _err = errText(e));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final p = Pal.of(context);
+    return _AuthBg(
+      child: Column(children: [
+        _logo(),
+        _Panel(children: [
+          Row(children: [
+            IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(CupertinoIcons.back)),
+            const Expanded(child: Text('Recuperar contraseña', style: TextStyle(fontSize: 21, fontWeight: FontWeight.w800))),
+          ]),
+          const SizedBox(height: 8),
+          if (!_sent) ...[
+            Text('Escribe el correo de tu cuenta. Te enviaremos un código de 6 dígitos (por correo o SMS al teléfono registrado).', style: TextStyle(color: p.secondary)),
+            const SizedBox(height: 12),
+            TextField(controller: _email, keyboardType: TextInputType.emailAddress, autocorrect: false, decoration: const InputDecoration(hintText: 'Correo')),
+          ] else ...[
+            Text('Si la cuenta existe, enviamos un código. Escríbelo y elige tu nueva contraseña (vale 15 minutos).', style: TextStyle(color: p.secondary)),
+            const SizedBox(height: 12),
+            TextField(controller: _code, keyboardType: TextInputType.number, maxLength: 6, decoration: const InputDecoration(hintText: 'Código de 6 dígitos', counterText: '')),
+            const SizedBox(height: 10),
+            PasswordField(controller: _pw, hint: 'Nueva contraseña (10+ con letras y números)'),
+          ],
+          if (_err != null) Padding(padding: const EdgeInsets.only(top: 10), child: Text(_err!, style: const TextStyle(color: AC.red))),
+          const SizedBox(height: 14),
+          FilledButton(onPressed: _busy ? null : (_sent ? _reset : _send), child: Text(_busy ? 'Un momento…' : (_sent ? 'Cambiar contraseña' : 'Enviar código'))),
+          if (_sent) TextButton(onPressed: _busy ? null : _send, child: const Text('Reenviar código')),
+          const SizedBox(height: 6),
+          Text('¿Eres administrador sin correo (p. ej. "superadmin")? Pide el restablecimiento al responsable del servidor.', textAlign: TextAlign.center, style: TextStyle(fontSize: 12, color: p.secondary)),
+        ]),
+      ]),
+    );
+  }
+}
+
+// =====================================================================================================
+// REGISTRO: quien compra la pulsera crea su cuenta y elige plan
+// =====================================================================================================
+class RegisterScreen extends StatefulWidget {
+  const RegisterScreen({super.key});
+  @override
+  State<RegisterScreen> createState() => _RegisterScreenState();
+}
+
+class _RegisterScreenState extends State<RegisterScreen> {
+  final _email = TextEditingController(), _phone = TextEditingController(), _pw = TextEditingController(), _pw2 = TextEditingController();
+  String _plan = 'NORMAL';
+  bool _busy = false;
+  String? _err;
+
+  static const _plans = [
+    ('NORMAL', 'Normal', 'Gratis', 'SOS, contactos, ubicación, mensajes y comunidad.', CupertinoIcons.person_fill, AC.blue),
+    ('TRIAL', 'Prueba Premium', '7 días gratis', 'Prueba todo Premium sin pagar. Luego vuelves a Normal.', CupertinoIcons.gift_fill, AC.green),
+    ('PREMIUM', 'Premium', 'Con pago', 'Audio, video y evidencias en la nube, informes y alertas silenciosas.', CupertinoIcons.star_fill, AC.purple),
+  ];
+
+  Future<void> _go() async {
+    final email = _email.text.trim();
+    if (!email.contains('@') || !email.contains('.')) {
+      setState(() => _err = errText('invalid_email'));
+      return;
+    }
+    if (_pw.text != _pw2.text) {
+      setState(() => _err = 'Las contraseñas no coinciden.');
+      return;
+    }
+    if (_pw.text.length < 10) {
+      setState(() => _err = errText('weak_password'));
+      return;
+    }
+    setState(() { _busy = true; _err = null; });
+    final s = context.read<AppState>();
+    final nav = Navigator.of(context);
+    var e = await Api.register(email, _pw.text, _phone.text, _plan);
+    if (e == null) e = await s.login(email, _pw.text, null);
+    if (!mounted) return;
+    setState(() => _busy = false);
+    if (e != null) {
+      setState(() => _err = errText(e));
+      return;
+    }
+    nav.popUntil((r) => r.isFirst);
+    if (_plan == 'PREMIUM') nav.push(MaterialPageRoute<void>(builder: (_) => const PaymentScreen()));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final p = Pal.of(context);
+    return _AuthBg(
+      child: Column(children: [
+        _logo(),
+        _Panel(children: [
+          Row(children: [
+            IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(CupertinoIcons.back)),
+            const Expanded(child: Text('Crear cuenta', style: TextStyle(fontSize: 21, fontWeight: FontWeight.w800))),
+          ]),
+          const SizedBox(height: 8),
+          TextField(controller: _email, keyboardType: TextInputType.emailAddress, autocorrect: false, decoration: const InputDecoration(hintText: 'Correo')),
+          const SizedBox(height: 10),
+          TextField(controller: _phone, keyboardType: TextInputType.phone, decoration: const InputDecoration(hintText: 'Celular con código de país (opcional)')),
+          const SizedBox(height: 10),
+          PasswordField(controller: _pw, hint: 'Contraseña (10+ con letras y números)'),
+          const SizedBox(height: 10),
+          PasswordField(controller: _pw2, hint: 'Repite la contraseña'),
+          const SizedBox(height: 16),
+          Text('Elige tu plan', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: p.label)),
+          const SizedBox(height: 8),
+          for (final pl in _plans)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: PressScale(
+                onTap: () => setState(() => _plan = pl.$1),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    color: _plan == pl.$1 ? pl.$6.withOpacity(0.18) : p.glass,
+                    border: Border.all(color: _plan == pl.$1 ? pl.$6 : p.glassEdge, width: _plan == pl.$1 ? 2 : 1),
+                  ),
+                  child: Row(children: [
+                    IconBadge(pl.$5, pl.$6, size: 44),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Row(children: [Text(pl.$2, style: TextStyle(fontWeight: FontWeight.w800, color: p.label)), const SizedBox(width: 8), Pill(pl.$3, color: pl.$6)]),
+                        const SizedBox(height: 2),
+                        Text(pl.$4, style: TextStyle(fontSize: 12.5, color: p.secondary)),
+                      ]),
+                    ),
+                    Icon(_plan == pl.$1 ? CupertinoIcons.check_mark_circled_solid : CupertinoIcons.circle, color: _plan == pl.$1 ? pl.$6 : p.secondary),
+                  ]),
+                ),
+              ),
+            ),
+          if (_err != null) Padding(padding: const EdgeInsets.only(top: 4), child: Text(_err!, style: const TextStyle(color: AC.red))),
+          const SizedBox(height: 10),
+          FilledButton(onPressed: _busy ? null : _go, child: Text(_busy ? 'Creando…' : (_plan == 'PREMIUM' ? 'Crear cuenta y pagar' : 'Crear cuenta'))),
         ]),
       ]),
     );

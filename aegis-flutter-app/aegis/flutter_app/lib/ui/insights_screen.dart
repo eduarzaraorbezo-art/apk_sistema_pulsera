@@ -1,10 +1,11 @@
-import 'package:flutter/cupertino.dart' show CupertinoIcons;
+import 'package:flutter/cupertino.dart' show CupertinoIcons, CupertinoPageRoute;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../app_state.dart';
 import '../data/db.dart';
 import '../health/reading.dart';
 import 'charts.dart';
+import 'billing_screen.dart';
 import 'theme.dart';
 import 'widgets.dart';
 
@@ -243,7 +244,7 @@ class PlanCard extends StatelessWidget {
           ),
         if (!s.isPremium) ...[
           const SizedBox(height: 6),
-          Text('Pide a tu administrador pasar a Premium.', style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 12.5, fontStyle: FontStyle.italic)),
+          AppButton(label: 'Pasar a Premium', icon: CupertinoIcons.star_fill, color: Colors.white, outline: true, compact: true, onPressed: () => Navigator.push(context, CupertinoPageRoute<void>(builder: (_) => const PaymentScreen()))),
         ],
       ]),
     );
