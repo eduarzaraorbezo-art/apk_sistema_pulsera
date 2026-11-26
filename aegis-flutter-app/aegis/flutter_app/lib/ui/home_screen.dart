@@ -16,6 +16,7 @@ import 'routes_screen.dart';
 import 'messages_screen.dart';
 import 'pin_pad.dart';
 import 'profile_screen.dart' show MedicalIdSheet;
+import 'extras_screens.dart';
 import 'theme.dart';
 import 'watch_ui.dart';
 import 'widgets.dart';
@@ -122,7 +123,9 @@ class HomeScreen extends StatelessWidget {
         const SizedBox(height: 8),
         Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
           QuickAction(icon: CupertinoIcons.checkmark_shield_fill, color: AC.green, label: 'Preparación', onTap: () => Navigator.push(context, CupertinoPageRoute<void>(builder: (_) => const PrepareScreen()))),
-          const Spacer(), const Spacer(), const Spacer(),
+          QuickAction(icon: CupertinoIcons.shield_lefthalf_fill, color: AC.blue, label: 'Modos', onTap: () => Navigator.push(context, CupertinoPageRoute<void>(builder: (_) => const ModesScreen()))),
+          QuickAction(icon: CupertinoIcons.rosette, color: AC.orange, label: 'Logros', onTap: () => Navigator.push(context, CupertinoPageRoute<void>(builder: (_) => const AchievementsScreen()))),
+          const Spacer(),
         ]),
         const SizedBox(height: 16),
         const PlanCard(),
