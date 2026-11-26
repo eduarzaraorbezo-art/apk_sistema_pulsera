@@ -69,7 +69,7 @@ class _LoaderState extends State<_Loader> {
                 AppButton(label: 'Reintentar', compact: true, onPressed: () { setState(() => _loading = true); _reload(); }),
               ]))
             else ...[
-              if (_failed) const Padding(padding: EdgeInsets.only(bottom: 8), child: Pill('Sin conexión · datos anteriores', icon: CupertinoIcons.wifi_slash, color: AC.orange)),
+              if (_failed) const Padding(padding: EdgeInsets.only(bottom: 8), child: Pill('Sin conexión · datos anteriores', icon: CupertinoIcons.exclamationmark_triangle_fill, color: AC.orange)),
               ...widget.builder(context, _d!, _reload),
             ],
           ],
@@ -217,8 +217,19 @@ class AdminCommunity extends StatelessWidget {
         builder: (context, d, reload) {
           final p = Pal.of(context);
           final items = [for (final x in (d['items'] as List)) Map<String, dynamic>.from(x as Map)];
-          if (items.isEmpty) return [Card2(child: Text('No hay zonas marcadas todavía.', style: TextStyle(color: p.secondary)))];
+          final head = Card2(
+            onTap: () => Navigator.push(context, CupertinoPageRoute<void>(builder: (_) => const AdminAnnouncements())),
+            color: AC.orange.withOpacity(0.14),
+            child: Row(children: [
+              const Icon(CupertinoIcons.speaker_2_fill, color: AC.orange),
+              const SizedBox(width: 12),
+              Expanded(child: Text('Avisos globales a usuarios', style: TextStyle(fontWeight: FontWeight.w700, color: p.label))),
+              Icon(CupertinoIcons.chevron_right, size: 16, color: p.secondary),
+            ]),
+          );
+          if (items.isEmpty) return [head, Card2(child: Text('No hay zonas marcadas todavía.', style: TextStyle(color: p.secondary)))];
           return [
+            head,
             for (final it in items)
               Card2(
                 color: _i(it['reports']) > 0 ? AC.red.withOpacity(0.10) : null,
@@ -431,4 +442,132 @@ class _PlanEditorState extends State<_PlanEditor> {
       ]),
     );
   }
+}
+
+
+// =====================================================================================================
+// AVISOS GLOBALES
+// =====================================================================================================
+const _levelColor = {'info': AC.blue, 'warning': AC.orange, 'critical': AC.red};
+const _levelIcon = {'info': CupertinoIcons.info_circle_fill, 'warning': CupertinoIcons.exclamationmark_triangle_fill, 'critical': CupertinoIcons.exclamationmark_octagon_fill};
+
+class AdminAnnouncements extends StatelessWidget {
+  const AdminAnnouncements({super.key});
+  @override
+  Widget build(BuildContext context) => Scaffold(
+        appBar: AppBar(),
+        body: _Loader(
+          title: 'Avisos',
+          subtitle: 'Mensajes que ven todos los usuarios',
+          load: Api.adminAnnouncements,
+          builder: (context, d, reload) {
+            final p = Pal.of(context);
+            final items = [for (final x in (d['items'] as List)) Map<String, dynamic>.from(x as Map)];
+            return [
+              AppButton(
+                label: 'Nuevo aviso',
+                icon: CupertinoIcons.add,
+                onPressed: () async {
+                  final ok = await showSheet<bool>(context, (_) => const _NewAnnouncement());
+                  if (ok == true) reload();
+                },
+              ),
+              const SizedBox(height: 12),
+              if (items.isEmpty) Card2(child: Text('No hay avisos publicados.', style: TextStyle(color: p.secondary))),
+              for (final a in items)
+                Card2(
+                  color: (_levelColor[a['level']] ?? AC.blue).withOpacity(a['active'] == true ? 0.12 : 0.04),
+                  child: Row(children: [
+                    Icon(_levelIcon[a['level']] ?? CupertinoIcons.info_circle_fill, color: _levelColor[a['level']] ?? AC.blue),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Text('${a['title']}', style: TextStyle(fontWeight: FontWeight.w700, color: p.label)),
+                        Text('${a['body']}', style: TextStyle(fontSize: 13, color: p.secondary)),
+                        const SizedBox(height: 6),
+                        Wrap(spacing: 6, children: [
+                          Pill('${a['audience']}', color: AC.purple),
+                          Pill(a['active'] == true ? 'Activo' : 'Vencido', color: a['active'] == true ? AC.green : AC.gray),
+                        ]),
+                      ]),
+                    ),
+                    IconButton(
+                      icon: const Icon(CupertinoIcons.delete_solid, color: AC.red),
+                      onPressed: () async {
+                        final e = await Api.adminDeleteAnnouncement('${a['id']}');
+                        if (context.mounted) toast(context, e == null ? 'Aviso eliminado' : errText(e));
+                        reload();
+                      },
+                    ),
+                  ]),
+                ),
+            ];
+          },
+        ),
+      );
+}
+
+class _NewAnnouncement extends StatefulWidget {
+  const _NewAnnouncement();
+  @override
+  State<_NewAnnouncement> createState() => _NewAnnouncementState();
+}
+
+class _NewAnnouncementState extends State<_NewAnnouncement> {
+  final _t = TextEditingController(), _b = TextEditingController();
+  String _level = 'info', _aud = 'ALL';
+  int _days = 7;
+  bool _busy = false;
+
+  @override
+  void dispose() {
+    _t.dispose();
+    _b.dispose();
+    super.dispose();
+  }
+
+  Widget _chips(Map<String, String> opts, String cur, void Function(String) set) => Wrap(
+        spacing: 8,
+        children: [for (final e in opts.entries) ChoiceChip(label: Text(e.value), selected: cur == e.key, onSelected: (_) => setState(() => set(e.key)))],
+      );
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: EdgeInsets.fromLTRB(20, 8, 20, MediaQuery.of(context).viewInsets.bottom + 20),
+        child: SingleChildScrollView(
+          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Text('Nuevo aviso', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 12),
+            TextField(controller: _t, maxLength: 80, decoration: const InputDecoration(labelText: 'Título')),
+            TextField(controller: _b, maxLength: 500, maxLines: 3, decoration: const InputDecoration(labelText: 'Mensaje')),
+            const SizedBox(height: 8),
+            _chips({'info': 'Info', 'warning': 'Importante', 'critical': 'Crítico'}, _level, (v) => _level = v),
+            const SizedBox(height: 8),
+            _chips({'ALL': 'Todos', 'NORMAL': 'Normal', 'PREMIUM': 'Premium'}, _aud, (v) => _aud = v),
+            const SizedBox(height: 8),
+            _chips({'1': '1 día', '7': '7 días', '30': '30 días'}, '$_days', (v) => _days = int.parse(v)),
+            const SizedBox(height: 16),
+            AppButton(
+              label: 'Publicar',
+              icon: CupertinoIcons.paperplane_fill,
+              loading: _busy,
+              onPressed: () async {
+                if (_t.text.trim().isEmpty || _b.text.trim().isEmpty) {
+                  toast(context, 'Escribe título y mensaje');
+                  return;
+                }
+                setState(() => _busy = true);
+                final e = await Api.adminCreateAnnouncement(_t.text, _b.text, _level, _aud, _days);
+                if (!mounted) return;
+                setState(() => _busy = false);
+                if (e == null) {
+                  Navigator.pop(context, true);
+                } else {
+                  toast(context, errText(e));
+                }
+              },
+            ),
+          ]),
+        ),
+      );
 }

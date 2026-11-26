@@ -210,6 +210,18 @@ class Api {
   static Future<Map<String, dynamic>?> adminPlans() => _getMap('/admin/plans');
   static Future<Map<String, dynamic>?> adminCommunity() => _getMap('/admin/community/places');
 
+  static Future<Map<String, dynamic>?> adminAnnouncements() => _getMap('/admin/announcements');
+  static Future<Map<String, dynamic>?> myAnnouncements() => _getMap('/announcements');
+  static Future<String?> adminCreateAnnouncement(String title, String body, String level, String audience, int days) async {
+    final r = await authed('POST', '/admin/announcements', {'title': title, 'body': body, 'level': level, 'audience': audience, 'days': days});
+    return r?.statusCode == 201 ? null : errorOf(r);
+  }
+
+  static Future<String?> adminDeleteAnnouncement(String id) async {
+    final r = await authed('DELETE', '/admin/announcements/$id');
+    return r?.statusCode == 200 ? null : errorOf(r);
+  }
+
   static Future<String?> adminPutLimits(String code, Map<String, dynamic> limits) async {
     final r = await authed('PUT', '/admin/plans/$code', {'limits': limits});
     return r?.statusCode == 200 ? null : errorOf(r);

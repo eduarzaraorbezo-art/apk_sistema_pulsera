@@ -11,6 +11,7 @@ import 'charts.dart';
 import 'community_screen.dart';
 import 'evidence_screen.dart';
 import 'insights_screen.dart';
+import 'prepare_screen.dart';
 import 'routes_screen.dart';
 import 'messages_screen.dart';
 import 'pin_pad.dart';
@@ -78,6 +79,7 @@ class HomeScreen extends StatelessWidget {
       subtitle: s.bandConnected ? 'Protección activa' : (s.demo ? 'Modo demostración' : 'Pulsera sin conectar'),
       children: [
         _StatusStrip(s),
+        const AnnouncementsBanner(),
         if (s.alert != null) _AlertBanner(s),
         if (s.checkin != null)
           Card2(
@@ -115,6 +117,11 @@ class HomeScreen extends StatelessWidget {
           QuickAction(icon: CupertinoIcons.map_fill, color: AC.green, label: 'Comunidad', onTap: () => Navigator.push(context, CupertinoPageRoute<void>(builder: (_) => const CommunityScreen()))),
           QuickAction(icon: CupertinoIcons.mic_fill, color: AC.red, label: 'Evidencias', onTap: () => Navigator.push(context, CupertinoPageRoute<void>(builder: (_) => const EvidenceScreen()))),
           QuickAction(icon: CupertinoIcons.chart_bar_alt_fill, color: AC.orange, label: 'Resumen', onTap: () => Navigator.push(context, CupertinoPageRoute<void>(builder: (_) => const InsightsScreen()))),
+        ]),
+        const SizedBox(height: 8),
+        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          QuickAction(icon: CupertinoIcons.checkmark_shield_fill, color: AC.green, label: 'Preparación', onTap: () => Navigator.push(context, CupertinoPageRoute<void>(builder: (_) => const PrepareScreen()))),
+          const Spacer(), const Spacer(), const Spacer(),
         ]),
         const SizedBox(height: 16),
         const PlanCard(),
