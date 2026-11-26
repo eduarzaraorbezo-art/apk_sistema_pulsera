@@ -195,6 +195,36 @@ class Api {
     return (r != null && r.statusCode == 200) ? null : errorOf(r);
   }
 
+  // ---- panel de administración (v0.5) ----
+  static Future<Map<String, dynamic>?> _getMap(String path) async {
+    final r = await authed('GET', path);
+    if (r == null || r.statusCode != 200) return null;
+    final d = jsonDecode(r.body);
+    return d is Map ? Map<String, dynamic>.from(d) : {'items': d};
+  }
+
+  static Future<Map<String, dynamic>?> adminStats() => _getMap('/admin/stats');
+  static Future<Map<String, dynamic>?> adminSystem() => _getMap('/admin/system');
+  static Future<Map<String, dynamic>?> adminAudit({String? q}) => _getMap('/admin/audit?limit=150${q == null || q.isEmpty ? '' : '&q=${Uri.encodeQueryComponent(q)}'}');
+  static Future<Map<String, dynamic>?> adminUserDetail(String id) => _getMap('/admin/users/$id');
+  static Future<Map<String, dynamic>?> adminPlans() => _getMap('/admin/plans');
+  static Future<Map<String, dynamic>?> adminCommunity() => _getMap('/admin/community/places');
+
+  static Future<String?> adminPutLimits(String code, Map<String, dynamic> limits) async {
+    final r = await authed('PUT', '/admin/plans/$code', {'limits': limits});
+    return r?.statusCode == 200 ? null : errorOf(r);
+  }
+
+  static Future<String?> adminSetRole(String id, String role) async {
+    final r = await authed('PUT', '/admin/users/$id/role', {'role': role});
+    return r?.statusCode == 200 ? null : errorOf(r);
+  }
+
+  static Future<String?> adminDeletePlace(String id) async {
+    final r = await authed('DELETE', '/admin/community/places/$id');
+    return r?.statusCode == 200 ? null : errorOf(r);
+  }
+
   // ---- salud / check-in / lugares (v0.2) ----
   static Future<List<Map<String, dynamic>>?> events() async {
     final r = await authed('GET', '/me/events');

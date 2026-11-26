@@ -10,6 +10,7 @@ import 'band_screen.dart';
 import 'charts.dart';
 import 'community_screen.dart';
 import 'evidence_screen.dart';
+import 'insights_screen.dart';
 import 'routes_screen.dart';
 import 'messages_screen.dart';
 import 'pin_pad.dart';
@@ -76,6 +77,7 @@ class HomeScreen extends StatelessWidget {
       title: s.displayName.isEmpty ? 'AEGIS' : 'Hola, ${s.displayName}',
       subtitle: s.bandConnected ? 'Protección activa' : (s.demo ? 'Modo demostración' : 'Pulsera sin conectar'),
       children: [
+        _StatusStrip(s),
         if (s.alert != null) _AlertBanner(s),
         if (s.checkin != null)
           Card2(
@@ -112,9 +114,10 @@ class HomeScreen extends StatelessWidget {
           QuickAction(icon: CupertinoIcons.location_north_fill, color: AC.blue, label: 'Mi recorrido', onTap: () => Navigator.push(context, CupertinoPageRoute<void>(builder: (_) => const RoutesScreen()))),
           QuickAction(icon: CupertinoIcons.map_fill, color: AC.green, label: 'Comunidad', onTap: () => Navigator.push(context, CupertinoPageRoute<void>(builder: (_) => const CommunityScreen()))),
           QuickAction(icon: CupertinoIcons.mic_fill, color: AC.red, label: 'Evidencias', onTap: () => Navigator.push(context, CupertinoPageRoute<void>(builder: (_) => const EvidenceScreen()))),
-          const Spacer(),
+          QuickAction(icon: CupertinoIcons.chart_bar_alt_fill, color: AC.orange, label: 'Resumen', onTap: () => Navigator.push(context, CupertinoPageRoute<void>(builder: (_) => const InsightsScreen()))),
         ]),
         const SizedBox(height: 16),
+        const PlanCard(),
         _HeartCard(s),
         GridView.count(
           crossAxisCount: 3, shrinkWrap: true, physics: const NeverScrollableScrollPhysics(),
@@ -133,7 +136,7 @@ class HomeScreen extends StatelessWidget {
               avatar: const Icon(CupertinoIcons.phone, size: 16),
               label: Text('${e.key} ${e.value}'),
               onPressed: () => launchUrl(Uri.parse('tel:${e.value}')),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              shape: const StadiumBorder(),
               side: BorderSide.none,
               backgroundColor: p.glass,
             ),
@@ -158,6 +161,28 @@ class HomeScreen extends StatelessWidget {
   }
 
   static String _src(String? s) => switch (s) { 'band' => 'Pulsera', 'screen' => 'Pantalla', 'checkin' => 'Check-in vencido', _ => s ?? '' };
+}
+
+class _StatusStrip extends StatelessWidget {
+  const _StatusStrip(this.s);
+  final AppState s;
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: SizedBox(
+          height: 34,
+          child: ListView(scrollDirection: Axis.horizontal, physics: const BouncingScrollPhysics(), children: [
+            Pill(s.bandConnected ? 'Pulsera conectada' : (s.demo ? 'Demostración' : 'Pulsera desconectada'), icon: CupertinoIcons.bluetooth, color: s.bandConnected ? AC.green : AC.gray),
+            const SizedBox(width: 8),
+            Pill(s.trk.active ? 'GPS activo' : 'GPS en espera', icon: CupertinoIcons.location_fill, color: s.trk.active ? AC.blue : AC.gray),
+            const SizedBox(width: 8),
+            if (s.rec.active && !s.rec.silent) ...[const Pill('Grabando', icon: CupertinoIcons.circle_fill, color: AC.red), const SizedBox(width: 8)],
+            Pill(s.pending == 0 ? 'Sincronizado' : '${s.pending} por enviar', icon: CupertinoIcons.cloud_fill, color: s.pending == 0 ? AC.teal : AC.orange),
+            const SizedBox(width: 8),
+            Pill(s.isPremium ? 'Premium' : 'Normal', icon: CupertinoIcons.star_fill, color: s.isPremium ? AC.purple : AC.gray, filled: s.isPremium),
+          ]),
+        ),
+      );
 }
 
 class _AlertBanner extends StatelessWidget {

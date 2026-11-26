@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import 'app_state.dart';
 import 'sos/sos_handler.dart';
 import 'sync/sync_service.dart';
+import 'ui/admin_panel.dart';
 import 'ui/admin_screen.dart';
 import 'ui/auth_screens.dart';
 import 'ui/contacts_screen.dart';
@@ -110,12 +111,14 @@ class _Splash extends StatelessWidget {
 class _Shell extends StatelessWidget {
   const _Shell();
   static const _user = <Widget>[HomeScreen(), HealthScreen(), SafetyScreen(), ContactsScreen(), ProfileScreen()];
-  static const _admin = <Widget>[UsersScreen(), ProfileScreen()];
 
   @override
   Widget build(BuildContext context) {
     final s = context.watch<AppState>();
-    final pages = s.isAdmin ? _admin : _user;
+    final isSuper = s.role == 'SUPER_ADMIN';
+    final pages = s.isAdmin
+        ? <Widget>[const AdminDashboard(), const UsersScreen(), const AdminCommunity(), if (isSuper) const AdminSystem(), const ProfileScreen()]
+        : _user;
     final tab = s.tab.clamp(0, pages.length - 1).toInt();
     final p = Pal.of(context);
     return Stack(children: [
@@ -145,7 +148,13 @@ class _Shell extends StatelessWidget {
           index: tab,
           onTap: s.setTab,
           items: s.isAdmin
-              ? const [(CupertinoIcons.person_3_fill, 'Usuarios'), (CupertinoIcons.person_crop_circle_fill, 'Perfil')]
+              ? [
+                  (CupertinoIcons.chart_bar_alt_fill, 'Panel'),
+                  (CupertinoIcons.person_3_fill, 'Usuarios'),
+                  (CupertinoIcons.map_pin_ellipse, 'Comunidad'),
+                  if (isSuper) (CupertinoIcons.slider_horizontal_3, 'Sistema'),
+                  (CupertinoIcons.person_crop_circle_fill, 'Perfil'),
+                ]
               : const [
                   (CupertinoIcons.shield_fill, 'Inicio'),
                   (CupertinoIcons.heart_fill, 'Salud'),

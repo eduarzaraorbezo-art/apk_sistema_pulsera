@@ -28,6 +28,33 @@ class UsersScreen extends StatefulWidget {
   State<UsersScreen> createState() => _UsersScreenState();
 }
 
+class _UsageCard extends StatelessWidget {
+  const _UsageCard({required this.id});
+  final String id;
+  @override
+  Widget build(BuildContext context) {
+    final p = Pal.of(context);
+    return FutureBuilder<Map<String, dynamic>?>(
+      future: Api.adminUserDetail(id),
+      builder: (c, snap) {
+        final d = snap.data;
+        if (d == null) {
+          return SizedBox(height: 40, child: Center(child: snap.connectionState == ConnectionState.done ? Text('Sin detalle', style: TextStyle(color: p.secondary)) : const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))));
+        }
+        final u = Map<String, dynamic>.from(d['usage'] as Map);
+        final mb = (((u['evidence_bytes'] as num?) ?? 0) / 1048576).toStringAsFixed(1);
+        return Wrap(spacing: 6, runSpacing: 6, alignment: WrapAlignment.center, children: [
+          Pill('${u['emergencies']} emergencias', icon: CupertinoIcons.exclamationmark_shield_fill, color: AC.red),
+          Pill('${u['contacts']} contactos', icon: CupertinoIcons.person_2_fill, color: AC.blue),
+          Pill('${u['routes']} recorridos', icon: CupertinoIcons.location_north_fill, color: AC.green),
+          Pill('$mb MB evidencias', icon: CupertinoIcons.cloud_fill, color: AC.teal),
+          Pill(d['mfa_enabled'] == true ? 'MFA activo' : 'Sin MFA', icon: CupertinoIcons.lock_shield_fill, color: d['mfa_enabled'] == true ? AC.green : AC.orange),
+        ]);
+      },
+    );
+  }
+}
+
 class _UsersScreenState extends State<UsersScreen> {
   List<Map<String, dynamic>>? _users;
   String? _err;
@@ -185,7 +212,9 @@ class _UsersScreenState extends State<UsersScreen> {
       return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         Text('${u['email']}', textAlign: TextAlign.center, style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: p.label)),
         Text('${_roleLabel[u['role']] ?? u['role']}${u['phone'] != null ? ' · ${u['phone']}' : ''}', textAlign: TextAlign.center, style: TextStyle(color: p.secondary)),
-        const SizedBox(height: 14),
+        const SizedBox(height: 10),
+        _UsageCard(id: id),
+        const SizedBox(height: 10),
         if (isUser)
           Segmented<String>(
             value: u['role'] as String,
@@ -194,6 +223,21 @@ class _UsersScreenState extends State<UsersScreen> {
           ),
         const SizedBox(height: 12),
         Group(children: [
+          if (me.role == 'SUPER_ADMIN' && !protected && u['email'] != me.loginName)
+            Row2(
+              icon: CupertinoIcons.person_crop_circle_badge_checkmark, color: AC.purple, title: 'Cambiar rol', value: _roleLabel[u['role']] ?? '${u['role']}', chevron: true,
+              onTap: () async {
+                final r = await showSheet<String>(c, (d) => Group(children: [
+                      for (final k in const ['ADMIN', 'OPERADOR', 'SOPORTE', 'USER_NORMAL', 'USER_PREMIUM'])
+                        Row2(icon: CupertinoIcons.person_fill, color: k == u['role'] ? AC.green : AC.blue, title: _roleLabel[k] ?? k, onTap: () => Navigator.pop(d, k)),
+                    ]));
+                if (r == null || r == u['role']) return;
+                final e = await Api.adminSetRole(id, r);
+                if (c.mounted) Navigator.pop(c);
+                if (context.mounted) toast(context, e == null ? 'Rol actualizado' : errText(e));
+                _load();
+              },
+            ),
           Row2(
             icon: CupertinoIcons.lock_rotation, color: AC.orange, title: 'Restablecer contraseña', subtitle: 'Genera una temporal', chevron: true,
             onTap: () async {

@@ -11,6 +11,7 @@ import '../app_state.dart';
 import '../sync/sync_service.dart';
 import 'theme.dart';
 import 'widgets.dart';
+import 'media_screens.dart';
 
 const _uuid = Uuid();
 String _mb(num b) => '${(b / 1048576).toStringAsFixed(1)} MB';
@@ -69,18 +70,17 @@ class _EvidenceScreenState extends State<EvidenceScreen> {
     if (mounted) setState(() => _playing = id);
   }
 
-  Future<void> _photo(AppState s) async {
-    // Las fotos se adjuntan a la emergencia activa; con Premium también se puede crear una sesión nueva.
-    String? session;
+  String? _session(AppState s) {
     final act = s.emergencies.where((e) => e['status'] == 'ACTIVE').toList();
-    if (act.isNotEmpty) {
-      session = act.first['id'] as String;
-    } else if (s.canAutoRecord) {
-      session = s.rec.session ?? _uuid.v4();
-    } else {
-      toast(context, 'Las fotos se adjuntan a una emergencia activa.');
-      return;
-    }
+    if (act.isNotEmpty) return act.first['id'] as String;
+    if (s.canAutoRecord) return s.rec.session ?? _uuid.v4();
+    toast(context, 'Las fotos se adjuntan a una emergencia activa.');
+    return null;
+  }
+
+  Future<void> _photo(AppState s) async {
+    final session = _session(s);
+    if (session == null) return;
     final x = await ImagePicker().pickImage(source: ImageSource.camera, maxWidth: 1600, imageQuality: 70);
     if (x == null) return;
     final bytes = await x.readAsBytes();
@@ -90,12 +90,31 @@ class _EvidenceScreenState extends State<EvidenceScreen> {
     _load();
   }
 
+  Future<void> _video(AppState s) async {
+    if (!s.canAutoRecord) {
+      toast(context, 'Grabar video es una función Premium.');
+      return;
+    }
+    final session = _session(s);
+    if (session == null) return;
+    final ok = await Navigator.push<bool>(context, MaterialPageRoute(builder: (_) => VideoRecordScreen(session: session)));
+    if (ok == true) _load();
+  }
+
+  Future<void> _delete(Map<String, dynamic> it) async {
+    await Api.deleteEvidence(it['id'] as String);
+    _load();
+  }
+
   @override
   Widget build(BuildContext context) {
     final s = context.watch<AppState>();
     final p = Pal.of(context);
     final rec = s.rec;
     final items = ((_data?['items'] as List?) ?? const []).map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    final photos = items.where((e) => e['kind'] == 'photo').toList();
+    final videos = items.where((e) => e['kind'] == 'video').toList();
+    final audios = items.where((e) => e['kind'] == 'audio').toList();
     final used = (_data?['used_bytes'] as num?) ?? 0, quota = (_data?['quota_bytes'] as num?) ?? 1;
     return Scaffold(
       appBar: AppBar(title: const Text('Evidencias')),
@@ -111,27 +130,27 @@ class _EvidenceScreenState extends State<EvidenceScreen> {
               Text(rec.active ? 'Se guarda en trozos de 30 s y se sube en cuanto hay red.' : (s.canAutoRecord ? 'También se activa solo en un SOS, una caída o si manipulan la pulsera.' : 'Función Premium: grabación automática y audio.'),
                   textAlign: TextAlign.center, style: TextStyle(color: p.secondary, fontSize: 13)),
               const SizedBox(height: 12),
+              AppButton(
+                label: rec.active ? 'Detener audio' : 'Grabar audio',
+                icon: rec.active ? CupertinoIcons.stop_fill : CupertinoIcons.mic_fill,
+                color: rec.active ? AC.red : AC.blue,
+                onPressed: () async {
+                  final e = await s.toggleRecording();
+                  if (!context.mounted) return;
+                  if (e == 'premium') {
+                    toast(context, 'Grabar evidencia es una función Premium.');
+                  } else if (e != null) {
+                    toast(context, e);
+                  } else {
+                    _load();
+                  }
+                },
+              ),
+              const SizedBox(height: 10),
               Row(children: [
-                Expanded(
-                  child: FilledButton.icon(
-                    style: FilledButton.styleFrom(backgroundColor: rec.active ? AC.red : AC.blue, minimumSize: const Size.fromHeight(48)),
-                    icon: Icon(rec.active ? CupertinoIcons.stop_fill : CupertinoIcons.circle_fill),
-                    label: Text(rec.active ? 'Detener' : 'Grabar'),
-                    onPressed: () async {
-                      final e = await s.toggleRecording();
-                      if (!context.mounted) return;
-                      if (e == 'premium') {
-                        toast(context, 'Grabar evidencia es una función Premium.');
-                      } else if (e != null) {
-                        toast(context, e);
-                      } else {
-                        _load();
-                      }
-                    },
-                  ),
-                ),
+                Expanded(child: AppButton(label: 'Video', icon: CupertinoIcons.videocam_fill, color: AC.purple, onPressed: () => _video(s))),
                 const SizedBox(width: 10),
-                OutlinedButton.icon(onPressed: () => _photo(s), icon: const Icon(CupertinoIcons.camera_fill), label: const Text('Foto'), style: OutlinedButton.styleFrom(minimumSize: const Size(0, 48))),
+                Expanded(child: AppButton(label: 'Foto', icon: CupertinoIcons.camera_fill, color: AC.teal, onPressed: () => _photo(s))),
               ]),
               if (rec.planBlocked) Padding(padding: const EdgeInsets.only(top: 8), child: Text('Tu plan no permite guardar audio en el servidor.', style: const TextStyle(color: AC.orange, fontSize: 12))),
               if (rec.error != null) Padding(padding: const EdgeInsets.only(top: 8), child: Text(rec.error!, style: const TextStyle(color: AC.red, fontSize: 12))),
@@ -151,25 +170,50 @@ class _EvidenceScreenState extends State<EvidenceScreen> {
           if (_data == null && !_err) const Padding(padding: EdgeInsets.all(30), child: Center(child: CircularProgressIndicator.adaptive())),
           if (_err) Card2(child: Text('No se pudo cargar. Revisa tu conexión.', style: TextStyle(color: p.secondary))),
           if (_data != null && items.isEmpty) Card2(child: Text('Aún no hay evidencias.', style: TextStyle(color: p.secondary))),
-          if (items.isNotEmpty)
+          if (photos.isNotEmpty) ...[
+            const SectionLabel('Fotos'),
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: photos.length,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 3, mainAxisSpacing: 6, crossAxisSpacing: 6),
+              itemBuilder: (c, i) => GestureDetector(
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => PhotoViewer(ids: [for (final x in photos) x['id'] as String], initial: i))),
+                onLongPress: () => _delete(photos[i]),
+                child: ClipRRect(borderRadius: BorderRadius.circular(14), child: ColoredBox(color: p.glass, child: PhotoThumb(id: photos[i]['id'] as String))),
+              ),
+            ),
+            Padding(padding: const EdgeInsets.only(top: 6), child: Text('Toca para ampliar · mantén pulsado para borrar', style: TextStyle(fontSize: 11, color: p.secondary))),
+          ],
+          if (videos.isNotEmpty) ...[
+            const SectionLabel('Videos'),
             Group(children: [
-              for (final it in items)
+              for (final it in videos)
                 Row2(
-                  icon: it['kind'] == 'audio' ? (_playing == it['id'] ? CupertinoIcons.stop_fill : CupertinoIcons.play_fill) : (it['kind'] == 'photo' ? CupertinoIcons.photo_fill : CupertinoIcons.videocam_fill),
-                  color: it['kind'] == 'audio' ? AC.red : AC.teal,
-                  title: '${it['kind'] == 'audio' ? 'Audio' : (it['kind'] == 'photo' ? 'Foto' : 'Video')}${it['duration_s'] == null ? '' : ' · ${_t(it['duration_s'] as int)}'}',
-                  subtitle: '${_trigName[it['trigger']] ?? 'Manual'}${it['auto'] == true ? ' (automática)' : ''} · ${_mb(it['size'] as num)}${it['source'] == 'band' ? ' · pulsera' : ''}',
-                  chevron: it['kind'] != 'audio',
-                  trailing: IconButton(
-                    icon: const Icon(CupertinoIcons.delete, color: AC.red, size: 20),
-                    onPressed: () async {
-                      await Api.deleteEvidence(it['id'] as String);
-                      _load();
-                    },
-                  ),
-                  onTap: it['kind'] == 'audio' ? () => _play(it) : null,
+                  icon: CupertinoIcons.play_circle_fill,
+                  color: AC.purple,
+                  title: 'Video${it['duration_s'] == null ? '' : ' · ${_t(it['duration_s'] as int)}'}',
+                  subtitle: '${_trigName[it['trigger']] ?? 'Manual'} · ${_mb(it['size'] as num)}',
+                  chevron: true,
+                  trailing: IconButton(icon: const Icon(CupertinoIcons.delete, color: AC.red, size: 20), onPressed: () => _delete(it)),
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => VideoPlayerScreen(id: it['id'] as String))),
                 ),
             ]),
+          ],
+          if (audios.isNotEmpty) ...[
+            const SectionLabel('Audios'),
+            Group(children: [
+              for (final it in audios)
+                Row2(
+                  icon: _playing == it['id'] ? CupertinoIcons.stop_fill : CupertinoIcons.play_fill,
+                  color: AC.red,
+                  title: 'Audio${it['duration_s'] == null ? '' : ' · ${_t(it['duration_s'] as int)}'}',
+                  subtitle: '${_trigName[it['trigger']] ?? 'Manual'}${it['auto'] == true ? ' (automática)' : ''} · ${_mb(it['size'] as num)}${it['source'] == 'band' ? ' · pulsera' : ''}',
+                  trailing: IconButton(icon: const Icon(CupertinoIcons.delete, color: AC.red, size: 20), onPressed: () => _delete(it)),
+                  onTap: () => _play(it),
+                ),
+            ]),
+          ],
           const SizedBox(height: 14),
           Text('Graba solo cuando tú o una emergencia lo activan, y hay un indicador rojo visible. Revisa la ley de tu país antes de grabar a otras personas.',
               textAlign: TextAlign.center, style: TextStyle(fontSize: 12, color: p.secondary)),

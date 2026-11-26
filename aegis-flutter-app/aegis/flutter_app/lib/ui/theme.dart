@@ -58,54 +58,44 @@ ThemeData buildTheme(Brightness b) {
     ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
-          minimumSize: const Size.fromHeight(50),
+          minimumSize: const Size.fromHeight(52),
           elevation: 0,
           backgroundColor: AC.blue.withOpacity(0.9),
           side: const BorderSide(color: Color(0x59FFFFFF), width: 1),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: const StadiumBorder(),
           textStyle: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         backgroundColor: b == Brightness.dark ? const Color(0x1AFFFFFF) : const Color(0x66FFFFFF),
         side: BorderSide(color: p.glassEdge, width: 1),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        minimumSize: const Size.fromHeight(50),
+        shape: const StadiumBorder(),
       ),
     ),
+    textButtonTheme: TextButtonThemeData(style: TextButton.styleFrom(shape: const StadiumBorder())),
   );
 }
 
 /// Fondo "aurora": manchas de color suaves y en movimiento lento. El cristal las desenfoca y refracta;
 /// cambia de paleta con el modo claro/oscuro, así todo el vidrio se adapta solo.
-class AuroraBackground extends StatefulWidget {
+class AuroraBackground extends StatelessWidget {
   const AuroraBackground({super.key, required this.child});
   final Widget child;
-  @override
-  State<AuroraBackground> createState() => _AuroraBackgroundState();
-}
-
-class _AuroraBackgroundState extends State<AuroraBackground> with SingleTickerProviderStateMixin {
-  late final AnimationController _c = AnimationController(vsync: this, duration: const Duration(seconds: 40))..repeat();
-
-  @override
-  void dispose() {
-    _c.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
+    // Pintado una sola vez (RepaintBoundary): sin animación continua para que la interfaz vaya fluida.
     return Stack(fit: StackFit.expand, children: [
-      RepaintBoundary(child: CustomPaint(painter: _AuroraPainter(_c, dark))),
-      widget.child,
+      RepaintBoundary(child: CustomPaint(painter: _AuroraPainter(dark))),
+      child,
     ]);
   }
 }
 
 class _AuroraPainter extends CustomPainter {
-  _AuroraPainter(this.t, this.dark) : super(repaint: t);
-  final Animation<double> t;
+  const _AuroraPainter(this.dark);
   final bool dark;
 
   @override
@@ -119,10 +109,10 @@ class _AuroraPainter extends CustomPainter {
           colors: dark ? const [Color(0xFF05060F), Color(0xFF0B1030)] : const [Color(0xFFE6EEFF), Color(0xFFF7EEFF)],
         ).createShader(rect),
     );
-    final a = t.value * 2 * math.pi;
+    const a = 0.6;
     final blobs = <(double, double, double, Color, double)>[
       (0.15 + 0.10 * math.sin(a), 0.12 + 0.06 * math.cos(a), 0.60, AC.blue, dark ? 0.55 : 0.50),
-      (0.90 + 0.06 * math.cos(a * 1), 0.35 + 0.08 * math.sin(a + 1), 0.55, AC.purple, dark ? 0.45 : 0.40),
+      (0.90 + 0.06 * math.cos(a), 0.35 + 0.08 * math.sin(a + 1), 0.55, AC.purple, dark ? 0.45 : 0.40),
       (0.20 + 0.08 * math.cos(a + 2), 0.70 + 0.07 * math.sin(a), 0.55, AC.teal, dark ? 0.38 : 0.45),
       (0.85 + 0.05 * math.sin(a + 3), 0.92 + 0.04 * math.cos(a + 1), 0.50, AC.pink, dark ? 0.32 : 0.32),
     ];

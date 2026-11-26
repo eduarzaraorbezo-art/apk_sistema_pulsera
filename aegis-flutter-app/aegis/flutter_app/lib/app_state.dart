@@ -333,7 +333,7 @@ class AppState extends ChangeNotifier {
     community.startAlertPolling(trk.position, () => settings['helper_mode'] != false);
     liveShare.restore().catchError((_) {});
     try { await loadSleep(); } catch (_) {}
-    _poll = Timer.periodic(const Duration(seconds: 3), (_) => refresh());
+    _poll = Timer.periodic(const Duration(seconds: 8), (_) => refresh(quiet: true));
     _tick = Timer.periodic(const Duration(seconds: 1), (_) => _onTick());
     _flush = Timer.periodic(const Duration(minutes: 2), (_) { flushHealth(); rec.flush(); });
     if (demo) _startSim();
@@ -990,12 +990,22 @@ class AppState extends ChangeNotifier {
     await refresh();
   }
 
-  Future<void> refresh() async {
-    pending = await AegisDb.pendingCount();
-    emergencies = [for (final e in await AegisDb.emergencies()) if (!(e['source'] == 'silent' && e['status'] == 'ACTIVE')) e];
-    contacts = await AegisDb.contacts();
-    lastSync = (await SharedPreferences.getInstance()).getInt('last_sync') ?? 0;
-    notifyListeners();
+  String _sig = '';
+  Future<void> refresh({bool quiet = false}) async {
+    final pend = await AegisDb.pendingCount();
+    final em = [for (final e in await AegisDb.emergencies()) if (!(e['source'] == 'silent' && e['status'] == 'ACTIVE')) e];
+    final co = await AegisDb.contacts();
+    final ls = (await SharedPreferences.getInstance()).getInt('last_sync') ?? 0;
+    // Solo se reconstruye la interfaz si algo cambió de verdad (evita parpadeos y lentitud).
+    final sig = '$pend|$ls|${em.length}|${em.isEmpty ? '' : '${em.first['id']}${em.first['status']}'}|${co.length}|${co.map((c) => c['name']).join(',')}';
+    pending = pend;
+    emergencies = em;
+    contacts = co;
+    lastSync = ls;
+    if (!quiet || sig != _sig) {
+      _sig = sig;
+      notifyListeners();
+    }
   }
 
   Future<void> rescanBand() => band.rescan();

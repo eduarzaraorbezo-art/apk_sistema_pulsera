@@ -8,7 +8,7 @@ import 'theme.dart';
 /// Liquid Glass: desenfoque + saturación del fondo (efecto de refracción), tinte adaptable al modo claro/oscuro,
 /// borde con luz y un brillo especular en la parte superior.
 class Glass extends StatelessWidget {
-  const Glass({super.key, required this.child, this.radius = 20, this.borderRadius, this.blur = 22, this.tint, this.strong = false, this.padding});
+  const Glass({super.key, required this.child, this.radius = 20, this.borderRadius, this.blur = 0, this.tint, this.strong = false, this.padding});
   final Widget child;
   final double radius, blur;
   final BorderRadius? borderRadius;
@@ -32,36 +32,137 @@ class Glass extends StatelessWidget {
     final p = Pal.of(context);
     final r = borderRadius ?? BorderRadius.circular(radius);
     final base = tint ?? (strong ? p.glassStrong : p.glass);
-    return ClipRRect(
-      borderRadius: r,
-      child: BackdropFilter(
-        filter: _filter(blur),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            borderRadius: r,
-            gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [base, base.withOpacity(base.opacity * 0.72)]),
-            border: Border.all(color: p.glassEdge, width: 0.8),
-          ),
-          child: Stack(fit: StackFit.passthrough, children: [
-            padding == null ? child : Padding(padding: padding!, child: child),
-            Positioned.fill(
-              child: IgnorePointer(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    borderRadius: r,
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter, end: Alignment.bottomCenter, stops: const [0, 0.4],
-                      colors: [Colors.white.withOpacity(p.dark ? 0.10 : 0.35), Colors.white.withOpacity(0)],
-                    ),
-                  ),
+    final body = DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: r,
+        gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [base, base.withOpacity(base.opacity * 0.72)]),
+        border: Border.all(color: p.glassEdge, width: 0.8),
+      ),
+      child: Stack(fit: StackFit.passthrough, children: [
+        padding == null ? child : Padding(padding: padding!, child: child),
+        Positioned.fill(
+          child: IgnorePointer(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                borderRadius: r,
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter, end: Alignment.bottomCenter, stops: const [0, 0.4],
+                  colors: [Colors.white.withOpacity(p.dark ? 0.08 : 0.30), Colors.white.withOpacity(0)],
                 ),
               ),
             ),
+          ),
+        ),
+      ]),
+    );
+    // El desenfoque en tiempo real es caro: solo se usa en barra, hojas y paneles (blur > 0).
+    if (blur <= 0) return body;
+    return ClipRRect(borderRadius: r, child: BackdropFilter(filter: _filter(blur), child: body));
+  }
+}
+
+/// Efecto de pulsación: se encoge suavemente al tocar (como iOS).
+class PressScale extends StatefulWidget {
+  const PressScale({super.key, required this.child, this.onTap, this.scale = 0.95});
+  final Widget child;
+  final VoidCallback? onTap;
+  final double scale;
+  @override
+  State<PressScale> createState() => _PressScaleState();
+}
+
+class _PressScaleState extends State<PressScale> {
+  bool _down = false;
+  @override
+  Widget build(BuildContext context) {
+    if (widget.onTap == null) return widget.child;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTapDown: (_) => setState(() => _down = true),
+      onTapUp: (_) => setState(() => _down = false),
+      onTapCancel: () => setState(() => _down = false),
+      onTap: () { HapticFeedback.selectionClick(); widget.onTap!(); },
+      child: AnimatedScale(scale: _down ? widget.scale : 1, duration: const Duration(milliseconds: 110), curve: Curves.easeOut, child: widget.child),
+    );
+  }
+}
+
+/// Aparición escalonada (fade + desplazamiento) para listas.
+class Appear extends StatelessWidget {
+  const Appear({super.key, required this.index, required this.child});
+  final int index;
+  final Widget child;
+  @override
+  Widget build(BuildContext context) => TweenAnimationBuilder<double>(
+        tween: Tween(begin: 0, end: 1),
+        duration: Duration(milliseconds: 320 + 70 * index.clamp(0, 8).toInt()),
+        curve: Curves.easeOutCubic,
+        builder: (_, v, c) => Opacity(opacity: v, child: Transform.translate(offset: Offset(0, 22 * (1 - v)), child: c)),
+        child: child,
+      );
+}
+
+/// Botón principal en forma de pastilla con degradado, brillo y animación de pulsación.
+class AppButton extends StatelessWidget {
+  const AppButton({super.key, required this.label, required this.onPressed, this.icon, this.color = AC.blue, this.loading = false, this.compact = false, this.outline = false});
+  final String label;
+  final VoidCallback? onPressed;
+  final IconData? icon;
+  final Color color;
+  final bool loading, compact, outline;
+  @override
+  Widget build(BuildContext context) {
+    final p = Pal.of(context);
+    final off = onPressed == null || loading;
+    final fg = outline ? color : Colors.white;
+    return Opacity(
+      opacity: off ? 0.5 : 1,
+      child: PressScale(
+        onTap: off ? null : onPressed,
+        child: Container(
+          height: compact ? 40 : 54,
+          padding: EdgeInsets.symmetric(horizontal: compact ? 18 : 24),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(40),
+            gradient: outline ? null : LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color.lerp(color, Colors.white, 0.18)!, color]),
+            color: outline ? color.withOpacity(0.10) : null,
+            border: Border.all(color: outline ? color.withOpacity(0.5) : Colors.white.withOpacity(0.35), width: 1),
+            boxShadow: outline ? null : [BoxShadow(color: color.withOpacity(p.dark ? 0.35 : 0.30), blurRadius: 16, offset: const Offset(0, 6))],
+          ),
+          child: Row(mainAxisSize: MainAxisSize.min, mainAxisAlignment: MainAxisAlignment.center, children: [
+            if (loading)
+              SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2.4, color: fg))
+            else if (icon != null)
+              Icon(icon, size: compact ? 17 : 20, color: fg),
+            if (loading || icon != null) const SizedBox(width: 8),
+            Flexible(child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: compact ? 14 : 17, fontWeight: FontWeight.w700, color: fg))),
           ]),
         ),
       ),
     );
   }
+}
+
+/// Etiqueta redonda (estado, plan, filtros).
+class Pill extends StatelessWidget {
+  const Pill(this.text, {super.key, this.icon, this.color = AC.blue, this.filled = false});
+  final String text;
+  final IconData? icon;
+  final Color color;
+  final bool filled;
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+        decoration: BoxDecoration(
+          color: filled ? color : color.withOpacity(0.16),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: color.withOpacity(filled ? 0 : 0.35), width: 0.8),
+        ),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          if (icon != null) ...[Icon(icon, size: 13, color: filled ? Colors.white : color), const SizedBox(width: 5)],
+          Text(text, style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: filled ? Colors.white : color)),
+        ]),
+      );
 }
 
 /// Contenedor de página: título grande estilo iOS + lista con espacio para la barra inferior.
@@ -91,7 +192,7 @@ class Page2 extends StatelessWidget {
             if (trailing != null) trailing!,
           ]),
           const SizedBox(height: 16),
-          ...children,
+          for (var i = 0; i < children.length; i++) Appear(index: i, child: children[i]),
         ],
       ),
     );
@@ -111,15 +212,10 @@ class Card2 extends StatelessWidget {
     final p = Pal.of(context);
     return Padding(
       padding: margin,
-      child: Glass(
-        tint: color,
-        child: Material(
-          type: MaterialType.transparency,
-          child: InkWell(
-            onTap: onTap == null ? null : () { HapticFeedback.selectionClick(); onTap!(); },
-            child: Padding(padding: padding, child: child),
-          ),
-        ),
+      child: PressScale(
+        onTap: onTap,
+        scale: 0.97,
+        child: Glass(tint: color, padding: padding, child: child),
       ),
     );
   }
@@ -276,15 +372,21 @@ class QuickAction extends StatelessWidget {
   Widget build(BuildContext context) {
     final p = Pal.of(context);
     return Expanded(
-      child: GestureDetector(
-        onTap: () { HapticFeedback.lightImpact(); onTap(); },
+      child: PressScale(
+        onTap: onTap,
         child: Column(children: [
-          SizedBox(
-            width: 58, height: 58,
-            child: Glass(radius: 29, blur: 16, tint: color.withOpacity(0.30), child: Center(child: Icon(icon, color: Colors.white, size: 26))),
+          Container(
+            width: 62, height: 62,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(22),
+              gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color.lerp(color, Colors.white, 0.22)!, color]),
+              border: Border.all(color: Colors.white.withOpacity(0.35), width: 0.8),
+              boxShadow: [BoxShadow(color: color.withOpacity(p.dark ? 0.35 : 0.28), blurRadius: 12, offset: const Offset(0, 5))],
+            ),
+            child: Icon(icon, color: Colors.white, size: 27),
           ),
-          const SizedBox(height: 6),
-          Text(label, textAlign: TextAlign.center, maxLines: 2, style: TextStyle(fontSize: 12, color: p.label)),
+          const SizedBox(height: 7),
+          Text(label, textAlign: TextAlign.center, maxLines: 2, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: p.label)),
         ]),
       ),
     );
@@ -372,7 +474,7 @@ void toast(BuildContext c, String msg) {
     padding: EdgeInsets.zero,
     behavior: SnackBarBehavior.floating,
     margin: const EdgeInsets.fromLTRB(16, 0, 16, 96),
-    content: Glass(radius: 18, strong: true, padding: const EdgeInsets.all(14), child: Text(msg, style: TextStyle(color: p.label, fontWeight: FontWeight.w600))),
+    content: Glass(radius: 18, blur: 18, strong: true, padding: const EdgeInsets.all(14), child: Text(msg, style: TextStyle(color: p.label, fontWeight: FontWeight.w600))),
   ));
 }
 
