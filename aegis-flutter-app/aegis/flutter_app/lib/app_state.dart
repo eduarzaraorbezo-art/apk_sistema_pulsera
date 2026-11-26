@@ -559,6 +559,13 @@ class AppState extends ChangeNotifier {
     return Api.putSettings(settings);
   }
 
+  /// Envía un comando suelto a la pulsera (vibrar, foto, grabar, hora…).
+  Future<bool> bandCommand(int cmd, {int arg = 0, String? ok}) async {
+    final sent = await band.send(Proto.tCommand, Proto.command(cmd, arg));
+    flash(sent ? (ok ?? 'Enviado a la pulsera') : 'La pulsera no está conectada');
+    return sent;
+  }
+
   Future<void> ringBand() async {
     final ok = await band.send(Proto.tCommand, Proto.command(Proto.cmdFind, 10));
     flash(ok ? 'Tu pulsera está sonando' : 'La pulsera no está conectada');

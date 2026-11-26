@@ -17,6 +17,7 @@ import 'messages_screen.dart';
 import 'pin_pad.dart';
 import 'profile_screen.dart' show MedicalIdSheet;
 import 'theme.dart';
+import 'watch_ui.dart';
 import 'widgets.dart';
 
 String mmss(int sec) => '${(sec ~/ 60).toString().padLeft(2, '0')}:${(sec % 60).toString().padLeft(2, '0')}';
@@ -88,7 +89,11 @@ class HomeScreen extends StatelessWidget {
               Text(mmss(s.checkinRemainingSec), style: const TextStyle(color: AC.blue, fontWeight: FontWeight.w800, fontSize: 18, fontFeatures: [FontFeature.tabularFigures()])),
             ]),
           ),
-        _BandCard(s),
+        WatchFace(s),
+        const SizedBox(height: 12),
+        SmartStack(s),
+        BandControls(s),
+        const SizedBox(height: 8),
         const SizedBox(height: 4),
         Center(child: SosHoldButton(onTriggered: () => triggerSos(context))),
         const SizedBox(height: 8),
