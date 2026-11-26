@@ -17,6 +17,7 @@ import 'messages_screen.dart';
 import 'pin_pad.dart';
 import 'profile_screen.dart' show MedicalIdSheet;
 import 'extras_screens.dart';
+import 'secret_screens.dart';
 import 'theme.dart';
 import 'watch_ui.dart';
 import 'widgets.dart';
@@ -125,7 +126,12 @@ class HomeScreen extends StatelessWidget {
           QuickAction(icon: CupertinoIcons.checkmark_shield_fill, color: AC.green, label: 'Preparación', onTap: () => Navigator.push(context, CupertinoPageRoute<void>(builder: (_) => const PrepareScreen()))),
           QuickAction(icon: CupertinoIcons.shield_lefthalf_fill, color: AC.blue, label: 'Modos', onTap: () => Navigator.push(context, CupertinoPageRoute<void>(builder: (_) => const ModesScreen()))),
           QuickAction(icon: CupertinoIcons.rosette, color: AC.orange, label: 'Logros', onTap: () => Navigator.push(context, CupertinoPageRoute<void>(builder: (_) => const AchievementsScreen()))),
-          const Spacer(),
+        ]),
+        const SizedBox(height: 8),
+        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          QuickAction(icon: CupertinoIcons.hand_raised_fill, color: AC.pink, label: 'Probar gestos', onTap: () => Navigator.push(context, CupertinoPageRoute<void>(builder: (_) => const GestureTestScreen()))),
+          QuickAction(icon: CupertinoIcons.lock_shield_fill, color: AC.purple, label: 'Palabra clave', onTap: () => Navigator.push(context, CupertinoPageRoute<void>(builder: (_) => const CodewordScreen()))),
+          const Spacer(), const Spacer(),
         ]),
         const SizedBox(height: 16),
         const PlanCard(),
